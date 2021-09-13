@@ -7,7 +7,7 @@ public class MarchingCubesTest : MonoBehaviour
     //the cube corners in correct order
     int[,] edgeIndex = new int[12, 2] { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 }, { 6, 7 }, { 4, 7 }, { 4, 0 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
 
-    Mesh mesh;
+    public Mesh mesh;
 
     //contains all the possible configuration within a cube
     int[,] triTable = new int[256, 16] {
@@ -276,6 +276,10 @@ public class MarchingCubesTest : MonoBehaviour
 
     //decides on where terrain is and where not, lower means more terrain
     public float cutoff = 0.5f;
+    public float groundLevel;
+    public float layerThickness = 5;
+
+    public Vector3 startingValue;
 
 
     //using the number received from the bit array we will get the edges
@@ -305,15 +309,16 @@ public class MarchingCubesTest : MonoBehaviour
         cornerPositions = new Vector3[8];
         foreach (KeyValuePair<Vector3, float> pos in vertexPositions)
         {
-            //number decides if its terrain or not, higher number means less terrain
+            //number decides if its terrain or not, higher number means more terrain
             cornerPositions[bitIndex] = pos.Key;
-            if (pos.Value > cutoff || pos.Key.y > 180)
+            if (pos.Value > cutoff + ((pos.Key.y + startingValue.y) / groundLevel * 0.25f) || (pos.Value + ((pos.Key.y + startingValue.y - groundLevel) / layerThickness)) > cutoff)
+            //if(pos.Value > cutoff || pos.Key.y + startingValue.y > groundLevel)
             {
-                bitarray[bitIndex] = true;
+                bitarray[bitIndex] = false;
             }
             else
             {
-                bitarray[bitIndex] = false;
+                bitarray[bitIndex] = true;
             }
             bitIndex++;
         }
@@ -365,11 +370,11 @@ public class MarchingCubesTest : MonoBehaviour
         Vector3[] newVert = verticesPositions.ToArray();
         int[] newTriangles = new int[verticesPositions.Count];
 
-        //reverse the triangles, so the normals are the other way around
+
         //since the tritable already makes sure we are creating triangles in the correct way, all we need to do is loop through the positions in order.
         for (int i = 0; i < newTriangles.Length; i++)
         {
-            newTriangles[i] = newTriangles.Length - i - 1;
+            newTriangles[i] = i;
         }
 
         mesh.vertices = newVert;

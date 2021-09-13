@@ -1,26 +1,35 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public class NoiseTest : MonoBehaviour
 {
     public int row = 25, column = 25, height = 5;
     public float size = 1;
-    public float noiseScale = 0.5f;
+
+    [Range(0,1)]
     public float cutoff;
+    public float groundLevel;
+    public float layerThickness = 5;
+
+    [Range(0.43f, 0.47f)]
+    public float noiseScale = 0.5f;
+    public int repeat = 9;
+
+    public Vector3 startingValue = new Vector3(0,0,0);
 
     public Dictionary<Vector3, float> noisePos = new Dictionary<Vector3, float>();
     List<Vector2> points = new List<Vector2>();
     List<Vector3> positions = new List<Vector3>();
     Dictionary<Vector3, float> vertPos = new Dictionary<Vector3, float>();
-    
-    public int repeat = 2;
 
-/*    private void Update()
+    public MarchingCubesTest marchingCube;
+
+    public void Start()
     {
-        noiseScale += 0.001f;
-        StartNoiseGenerator();
-    }*/
+        marchingCube = this.transform.GetComponent<MarchingCubesTest>();
+    }
 
     private static readonly int[] permutation = { 151,160,137,91,90,15,                 // Hash lookup table as defined by Ken Perlin.  This is a randomly
     131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,    // arranged array of all numbers from 0-255 inclusive.
@@ -148,22 +157,27 @@ public class NoiseTest : MonoBehaviour
         return t * t * t * (t * (t * 6 - 15) + 10);         // 6t^5 - 15t^4 + 10t^3
     }
     
-    public void StartNoiseGenerator()
+    public void StartNoiseGenerator( )
     {
+        //startingValue = starting;
+        Debug.Log("starting");
+        marchingCube = this.transform.GetComponent<MarchingCubesTest>();
+        marchingCube.startingValue = startingValue;
         positions.Clear();
-        GameObject.FindGameObjectWithTag("MarchingCube").GetComponent<MarchingCubesTest>().cutoff = cutoff;
+        marchingCube.cutoff = cutoff;
+        marchingCube.groundLevel = groundLevel;
+        marchingCube.layerThickness = layerThickness;
         noisePos.Clear();
-        for(int r = 0; r < row - 1; r++)
+
+        Vector3 middlePoint = new Vector3((row + (row % 2)) / 2, (height + (height % 2))/2, (column + (column % 2))/2);
+        middlePoint *= -1;
+
+        for(int r = (int)middlePoint.x; r < row / 2; r++)
         {
-            for (int c = 0; c < column -1; c++)
+            for (int c = (int)middlePoint.z; c < column / 2; c++)
             {
-                for (int h = 0; h < height -1; h++)
+                for (int h = (int)middlePoint.y; h < height / 2; h++)
                 {
-                    //float noiseIndex = Perlin3D(r * noiseScale, h * noiseScale, c * noiseScale);
-                    //Debug.Log(noiseIndex);
-
-                    //noisePos.Add(new Vector3(r * size, h * size, c * size), noiseIndex);
-
                     Dictionary<Vector3, float> vertPos = new Dictionary<Vector3, float>();
                     Vector3 newPos3 = new Vector3(r * size, h * size, c * size);
                     Vector3 newPos2 = new Vector3((r + 1) * size, h * size, c * size);
@@ -173,6 +187,17 @@ public class NoiseTest : MonoBehaviour
                     Vector3 newPos6 = new Vector3((r + 1) * size, h * size, (c + 1) * size);
                     Vector3 newPos4 = new Vector3(r * size, (h + 1) * size, (c + 1) * size);
                     Vector3 newPos5 = new Vector3((r + 1) * size, (h + 1) * size, (c + 1) * size);
+/*
+                    newPos0 += startingValue;
+                    newPos1 += startingValue;
+                    newPos2 += startingValue;
+                    newPos3 += startingValue;
+                    newPos4 += startingValue;
+                    newPos5 += startingValue;
+                    newPos6 += startingValue;
+                    newPos7 += startingValue;*/
+
+
 /*                    vertPos.Add(newPos0, Perlin3D(newPos0.x * noiseScale, newPos0.y * noiseScale, newPos0.z * noiseScale));
                     vertPos.Add(newPos1, Perlin3D(newPos1.x * noiseScale, newPos1.y * noiseScale, newPos1.z * noiseScale));
                     vertPos.Add(newPos2, Perlin3D(newPos2.x * noiseScale, newPos2.y * noiseScale, newPos2.z * noiseScale));
@@ -182,14 +207,14 @@ public class NoiseTest : MonoBehaviour
                     vertPos.Add(newPos6, Perlin3D(newPos6.x * noiseScale, newPos6.y * noiseScale, newPos6.z * noiseScale));
                     vertPos.Add(newPos7, Perlin3D(newPos7.x * noiseScale, newPos7.y * noiseScale, newPos7.z * noiseScale));*/
                     
-                    vertPos.Add(newPos0, perlin(newPos0.x * noiseScale, newPos0.y * noiseScale, newPos0.z * noiseScale));
-                    vertPos.Add(newPos1, perlin(newPos1.x * noiseScale, newPos1.y * noiseScale, newPos1.z * noiseScale));
-                    vertPos.Add(newPos2, perlin(newPos2.x * noiseScale, newPos2.y * noiseScale, newPos2.z * noiseScale));
-                    vertPos.Add(newPos3, perlin(newPos3.x * noiseScale, newPos3.y * noiseScale, newPos3.z * noiseScale));
-                    vertPos.Add(newPos4, perlin(newPos4.x * noiseScale, newPos4.y * noiseScale, newPos4.z * noiseScale));
-                    vertPos.Add(newPos5, perlin(newPos5.x * noiseScale, newPos5.y * noiseScale, newPos5.z * noiseScale));
-                    vertPos.Add(newPos6, perlin(newPos6.x * noiseScale, newPos6.y * noiseScale, newPos6.z * noiseScale));
-                    vertPos.Add(newPos7, perlin(newPos7.x * noiseScale, newPos7.y * noiseScale, newPos7.z * noiseScale));
+                    vertPos.Add(newPos0, perlin((newPos0.x + startingValue.x) * noiseScale, (newPos0.y + startingValue.y) * noiseScale, (newPos0.z + startingValue.z) * noiseScale));
+                    vertPos.Add(newPos1, perlin((newPos1.x + startingValue.x) * noiseScale, (newPos1.y + startingValue.y) * noiseScale, (newPos1.z + startingValue.z )* noiseScale));
+                    vertPos.Add(newPos2, perlin((newPos2.x + startingValue.x) * noiseScale, (newPos2.y + startingValue.y) * noiseScale, (newPos2.z + startingValue.z) * noiseScale));
+                    vertPos.Add(newPos3, perlin((newPos3.x + startingValue.x) * noiseScale, (newPos3.y + startingValue.y) * noiseScale, (newPos3.z + startingValue.z )* noiseScale));
+                    vertPos.Add(newPos4, perlin((newPos4.x + startingValue.x) * noiseScale, (newPos4.y + startingValue.y) * noiseScale,( newPos4.z + startingValue.z) * noiseScale));
+                    vertPos.Add(newPos5, perlin((newPos5.x + startingValue.x) * noiseScale, (newPos5.y + startingValue.y) * noiseScale,( newPos5.z + startingValue.z) * noiseScale));
+                    vertPos.Add(newPos6, perlin((newPos6.x + startingValue.x) * noiseScale, (newPos6.y + startingValue.y) * noiseScale, (newPos6.z + startingValue.z) * noiseScale));
+                    vertPos.Add(newPos7, perlin((newPos7.x + startingValue.x) * noiseScale, (newPos7.y + startingValue.y) * noiseScale, (newPos7.z + startingValue.z) * noiseScale));
 
                     positions.Add(newPos0);
                     positions.Add(newPos1);
@@ -200,52 +225,25 @@ public class NoiseTest : MonoBehaviour
                     positions.Add(newPos6);
                     positions.Add(newPos7);
 
-                    GameObject.FindGameObjectWithTag("MarchingCube").GetComponent<MarchingCubesTest>().ComputeMesh(vertPos);
+                    marchingCube.ComputeMesh(vertPos);
                     
                 }
             }
         }
-        GameObject.FindGameObjectWithTag("MarchingCube").GetComponent<MarchingCubesTest>().GenerateMesh();
-    }
-
-
-
-    public static float Perlin3D(float x, float y, float z)
-    {
-        float ab = Mathf.PerlinNoise(x,y);
-        float bc = Mathf.PerlinNoise(y,z);
-        float ac = Mathf.PerlinNoise(x,z);
-
-        float ba = Mathf.PerlinNoise(y,x);
-        float cb = Mathf.PerlinNoise(z,y);
-        float ca = Mathf.PerlinNoise(z,x);
-
-        float abc = ab + bc + ac + ba + cb + ca;
-        return abc / 6f;
+        marchingCube.GenerateMesh();
     }
 
 
     private void OnDrawGizmos()
     {
-        /*        foreach(KeyValuePair<Vector3, float> pos in noisePos)
-                {
-                    Gizmos.color = new Color(pos.Value, pos.Value, pos.Value, 1);
-                    Gizmos.DrawSphere(pos.Key, 0.1f);
-                }*/
 
-        foreach (Vector3 pos in positions)
+/*        foreach (Vector3 pos in positions)
         {
-            float sample = Perlin3D(pos.x, pos.y, pos.z);
+            float sample = perlin(pos.x, pos.y, pos.z);
             Gizmos.color = new Color(sample, sample, sample, 1);
             Gizmos.DrawSphere(pos, 0.25f);
-        }
-
-/*            foreach (Vector2 noise in points)
-        {
-            Gizmos.color = Color.red;
-            Vector3 pos = new Vector3(noise.x, 0, noise.y);
-            Gizmos.DrawSphere(pos, 0.05f);
         }*/
+
     }
 
 }

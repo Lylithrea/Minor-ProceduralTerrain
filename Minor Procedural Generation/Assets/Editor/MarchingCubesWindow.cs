@@ -27,7 +27,7 @@ public class MarchingCubesWindow : EditorWindow
         if (GUILayout.Button("Generate Noise"))
         {
             GameObject noiseGenerator = GameObject.FindGameObjectWithTag("NoiseGenerator");
-            noiseGenerator.GetComponent<NoiseTest>().StartNoiseGenerator();
+            //noiseGenerator.GetComponent<NoiseTest>().StartNoiseGenerator();
         }
 
 
@@ -50,7 +50,7 @@ public class MarchingCubesWindow : EditorWindow
             noise.height = Int32.Parse(height);
             noise.size = float.Parse(size);
             noise.cutoff = float.Parse(cutoff);
-            noise.StartNoiseGenerator();
+            //noise.StartNoiseGenerator();
             //noise.isRunning = true;
         }
 
