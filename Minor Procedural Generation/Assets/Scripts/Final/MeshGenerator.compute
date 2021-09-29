@@ -311,18 +311,6 @@ int getIndex(int x, int y, int z)
 
 
 
-
-struct test
-{
-    float1 hello;
-    float3 pos;
-};
-
-AppendStructuredBuffer<test> boop;
-
-AppendStructuredBuffer<float4> testbuf;
-float arraytest[10];
-
 struct TriangleStruct
 {
     float3 VertexC;
@@ -335,81 +323,54 @@ struct TriangleStruct
 AppendStructuredBuffer<TriangleStruct> triangles;
 
 
+float3 interpolate(float4 vertexA, float4 vertexB)
+{
+    //float1 delta =  (vertexA.w  + vertexB.w ) / 2;
+    //float1 test;
+    //if (vertexA.w > vertexB.w)
+    //{
+        //vertexA is bigger
+    //     test = (vertexA.w - vertexB.w) / (vertexA.w - vertexB.w) + (vertexB.w - vertexB.w) / (vertexA.w - vertexB.w);
+    //}
+    //else
+    //{
+     //    test = (vertexA.w - vertexA.w) / (vertexB.w - vertexA.w) + (vertexB.w - vertexA.w) / (vertexB.w - vertexA.w);
+    //}
+    //return vertexA.xyz + test * (vertexB.xyz - vertexA.xyz);
+    
+    return (vertexA.xyz + vertexB.xyz) / 2;
+    
+    float t = (1 - vertexA.w) / (vertexB.w - vertexA.w);
+    return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
+}
+
+
 void createTriangles(float4 corners[8], const int configurationNumber)
 {
 
     for (int i = 0; triTable[configurationNumber][i] !=  -1; i += 3)
     {
 
-        //triTable[configurationNumber][i] 
-        
-    //float3 newVertexA = corners[edgeIndex[0][0]];
-        
 
-
-        
-        //int j = configurationNumber;
-        //int test = triTable[j][0];
-        //float4 cornerA = edgeIndex[test][0];
-        //float4 cornerA = float4(0, 0, 0, 0);
-        
-        
-            //float3 cornerA = corners[edgeIndex[triTable[configurationNumber][i]][0]].xyz;
-            //float3 cornerB = corners[edgeIndex[triTable[configurationNumber][i]][1]].xyz;
-
-        
-            //float3 newVertexA = (cornerA + cornerB) / 2;
-            //float3 newVertexB = float3(0, 0, 0);
-            //float3 newVertexC = float3(0, 0, 0);
     
-            float3 newVertexA = (corners[edgeIndex[triTable[configurationNumber][i]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i]][1]].xyz) / 2;
-            float3 newVertexB = (corners[edgeIndex[triTable[configurationNumber][i + 1]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 1]][1]].xyz) / 2;
-            float3 newVertexC = (corners[edgeIndex[triTable[configurationNumber][i + 2]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 2]][1]].xyz) / 2;
+        //float3 newVertexA = (corners[edgeIndex[triTable[configurationNumber][i]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i]][1]].xyz) / 2;
+        //float3 newVertexB = (corners[edgeIndex[triTable[configurationNumber][i + 1]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 1]][1]].xyz) / 2;
+        //float3 newVertexC = (corners[edgeIndex[triTable[configurationNumber][i + 2]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 2]][1]].xyz) / 2;
+            
+        float3 newVertexA = interpolate(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
+        float3 newVertexB = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
+        float3 newVertexC = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]] , corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
         
         
-            TriangleStruct newTriangle1;
-            newTriangle1.VertexA = newVertexA;
-            newTriangle1.VertexB = newVertexB;
-            newTriangle1.VertexC = newVertexC;
+        TriangleStruct newTriangle1;
+        newTriangle1.VertexA = newVertexA;
+        newTriangle1.VertexB = newVertexB;
+        newTriangle1.VertexC = newVertexC;
 
             
-            triangles.Append(newTriangle1);
+        triangles.Append(newTriangle1);
 
-
-        
-        //testbuf.Append(float4(0, 0, 0, 0));
-        //test test1;
-        //test1.hello = 0;
-        //test1.pos = float3(0, 0, 0);
-        //boop.Append(test1);
-               
     }
-    
-
-    //for (int i = 0; triTable[configurationNumber][i] != -1 ; i += 3)
-    //{
-        
-        //corner 1:     edgeIndex[i][0]
-        //corner 2:     edgeIndex[i][1]
-        //to get positions: corners[edgeIndex[i][0]]
-       
-        //float3 newVertexA = (corners[edgeIndex[edges[i]][0]] + corners[edgeIndex[edges[i]][1]]) / 2;
-        //float3 newVertexB = (corners[edgeIndex[edges[i + 1]][0]] + corners[edgeIndex[edges[i+1]][1]]) / 2;
-        //float3 newVertexC = (corners[edgeIndex[edges[i + 2]][0]] + corners[edgeIndex[edges[i+2]][1]]) / 2;
-        
-        //Triangle newTriangle;
-        //newTriangle.VertexA = newVertexA;
-        //newTriangle.VertexB = newVertexB;
-        //newTriangle.VertexC = newVertexC;
-        
-        //triangles.Append(newTriangle);
-
-    //}
-    
-    //float3 newVertexA = (corners[edgeIndex[edges[0]][0]] + corners[edgeIndex[edges[0]][1]]) / 2;
-    //float3 newVertexB = (corners[edgeIndex[edges[1 + 1]][0]] + corners[edgeIndex[edges[1+1]][1]]) / 2;
-    //float3 newVertexC = (corners[edgeIndex[edges[2 + 2]][0]] + corners[edgeIndex[edges[2+2]][1]]) / 2;
-
 
 }
 
@@ -445,9 +406,6 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     //generate configuration
     int configurationNumber = generateConfiguration(corners);
     
-    
-    //get configuration edges
-    //getEdges(configurationNumber);
 
     
     //create triangle

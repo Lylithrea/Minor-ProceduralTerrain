@@ -40,6 +40,7 @@ public class Generation : MonoBehaviour
     public Material mat4;
     public Material mat5;
     public Material triangleMat;
+    public Texture texture;
 
 
     void Start()
@@ -168,22 +169,22 @@ public class Generation : MonoBehaviour
         }
     }
 
+    Triangle[] triangles = new Triangle[1];
+
     public void CreateChunk(Vector3 startingPos)
     {
-        //get vertex positions <- variable
-
-        //generate marching cubes <- compute shader
-        //set mesh <- main thread
         currentPosition = startingPos;
-
         GameObject chunk = new GameObject();
         chunk.transform.position = startingPos;
         chunk.AddComponent<Chunk>();
         noiseShader.SetVector("startingValue", startingPos);
+
         //generate noise <- compute shader
         //generate marching cubes <- compute shader
-        Triangle[] triangles = noiseGenerator();
+        Array.Clear(triangles, 0, triangles.Length);
+        triangles = noiseGenerator();
 
+        //set mesh <- main thread
         SetMesh(chunk, triangles);
         allChunks.Add(startingPos, chunk);
     }
@@ -197,7 +198,7 @@ public class Generation : MonoBehaviour
             meshRenderer = chunk.GetComponent<MeshRenderer>();
         }
 
-        meshRenderer.material = mat3;
+
 
         MeshFilter meshFilter = chunk.GetComponent<MeshFilter>();
         if (meshFilter == null)
@@ -221,6 +222,14 @@ public class Generation : MonoBehaviour
             newTriangles[i] = i;
         }
 
+
+        Texture2D text = new Texture2D(2, 2);
+        text.SetPixels(new Color[4] { Color.white, Color.white, Color.red, Color.red });
+        text.filterMode = FilterMode.Point;
+        text.Apply();
+        meshRenderer.material.mainTexture = text;
+
+
         meshFilter.mesh = mesh;
 
         mesh.vertices = vertices;
@@ -233,100 +242,9 @@ public class Generation : MonoBehaviour
         Array.Clear(vertices, 0, vertices.Length);
         Array.Clear(newTriangles, 0, newTriangles.Length);
 
+        meshRenderer.material = mat3;
     }
 
-    struct cube
-    {
-        public Vector3 position;
-        public float noise;
-    };
-
-    private void noiseGeneratorOld()
-    {
-        /*        cube[] cubes = new cube[chunkVertexPositions.Length];
-
-        noiseCubes = new ComputeBuffer(chunkVertexPositions.Length, sizeof(float) * 4);
-        noiseShader.SetBuffer(0, "cubes", noiseCubes);
-
-        noiseShader.SetVector("startingValue", startingPos);
-
-        vertexPositionBuffer = new ComputeBuffer(chunkVertexPositions.Length, sizeof(float) * 3);
-
-        vertexPositionBuffer.SetData(chunkVertexPositions);
-        noiseShader.SetBuffer(0, "vertexPositions", vertexPositionBuffer);
-*/
-
-        //ComputeBuffer results = new ComputeBuffer(testResults, sizeof(float) * 3, ComputeBufferType.Append);
-        //Vector3[] test = new Vector3[testResults];
-
-
-        //Debug.Log("Test result at position " + i + " : (" + test[i].x + "," + test[i].y + "," + test[i].z + ") with noise value : " + test[i].w );
-
-        //Debug.Log("Test results amount : " + test.Length);
-
-        //noiseCubes.GetData(cubes);
-        /*        vertexPositionBuffer.Release();
-                noiseCubes.Release();*/
-
-    }
-
-
-    private void testNoiseGenerator()
-    {
-
-        //should be equal to computeshader numthreads
-        int numThreads = 8;
-
-        float threadsPerAxis = (float)pointsPerAxis / (float)numThreads;
-
-        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
-
-        //generate the size of the list for all the points
-        int testResults = Mathf.CeilToInt(threadsPerAxis * threadsPerAxis * threadsPerAxis * numThreads * numThreads * numThreads);
-
-
-        ComputeBuffer results = new ComputeBuffer(testResults, sizeof(float) * 4, ComputeBufferType.Append);
-
-        //reset the counter value because else it starts where it left off previous run
-        results.SetCounterValue(0);
-        noiseShader.SetBuffer(0, "vertexPerlin", results);
-
-        //how often the shader will get dispatched in each direction
-        //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
-        noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
-
-        Vector4[] test = new Vector4[testResults];
-
-        results.GetData(test);
-        results.Release();
-
-        for (int i = 0; i < test.Length; i++)
-        {
-
-            GameObject newSphere = Instantiate(sphere);
-            newSphere.transform.position = new Vector3(test[i].x, test[i].y, test[i].z);
-            if (test[i].w < -0.6f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat1;
-            }
-            else if (test[i].w < -0.2f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat2;
-            }
-            else if (test[i].w < 0.2f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat3;
-            }
-            else if (test[i].w < 0.6f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat4;
-            }
-            else
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat5;
-            }
-        }
-    }
 
     private Triangle[] noiseGenerator()
     {
@@ -354,33 +272,6 @@ public class Generation : MonoBehaviour
 
         vertexPerlinBuffer.GetData(vertexPerlin);
         vertexPerlinBuffer.Release();
-
-/*        for(int i = 0; i < vertexPerlin.Length; i++)
-        {
-
-            GameObject newSphere = Instantiate(sphere);
-            newSphere.transform.position = new Vector3(vertexPerlin[i].x, vertexPerlin[i].y, vertexPerlin[i].z);
-            if(vertexPerlin[i].w < -0.6f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat1;
-            }
-            else if(vertexPerlin[i].w < -0.2f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat2;
-            }
-            else if(vertexPerlin[i].w < 0.2f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat3;
-            }
-            else if(vertexPerlin[i].w < 0.6f)
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat4;
-            }
-            else
-            {
-                newSphere.GetComponent<MeshRenderer>().material = mat5;
-            }
-        }*/
 
         return marchingCubesGenerator(vertexPerlin);
     }
@@ -426,7 +317,6 @@ public class Generation : MonoBehaviour
 
         triangleBuffer.Release();
         vertexBuffer.Release();
-
 
         return triangles;
     }
