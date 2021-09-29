@@ -4,35 +4,21 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 
-const float1 chunkSize;
-const float1 row;
-const float1 height;
-const float1 column;
-const float1 size;
-const float1 noiseScale;
-const float1 repeat;
-const int pointsPerAxis;
+float1 chunkSize;
+float1 row;
+float1 height;
+float1 column;
+float1 size;
+float1 noiseScale;
+float1 repeat;
 
+float3 middlePoint;
 float3 startingValue;
 
-//RWStructuredBuffer<float3> vertexPositions;
+RWStructuredBuffer<float3> vertPos;
+RWStructuredBuffer<float> noisePos;
 
-RWStructuredBuffer<float4> vertexPerlin;
-
-static int numThreads = 8;
-
-
-struct cube
-{
-    float3 position;
-    float noise;
-};
-
-
-
-AppendStructuredBuffer<cube> cubes;
-//RWStructuredBuffer<cube> cubes;
-
+RWStructuredBuffer<float> test;
 
 static int permutation[] =
 {
@@ -123,8 +109,6 @@ float perlin(float x, float y, float z)
         y = y % repeat;
         z = z % repeat;
     }
-    
-    
 
     int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
     int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
@@ -133,8 +117,6 @@ float perlin(float x, float y, float z)
     float yf = y - (int) y;
     float zf = z - (int) z;
 
-    
-    
     float u = fade(xf);
     float v = fade(yf);
     float w = fade(zf);
@@ -148,7 +130,6 @@ float perlin(float x, float y, float z)
     bba = p[p[p[inc(xi)] + inc(yi)] + zi];
     bab = p[p[p[inc(xi)] + yi] + inc(zi)];
     bbb = p[p[p[inc(xi)] + inc(yi)] + inc(zi)];
-
 
     float x1, x2, y1, y2;
     x1 = lerp(grad((int) aaa, xf, yf, zf), // The gradient function calculates the dot product between a pseudorandom
@@ -167,43 +148,62 @@ float perlin(float x, float y, float z)
                     u);
     y2 = lerp(x1, x2, v);
 
-
-    float result = ((lerp(y1, y2, w) + 1) / 2);
-    
-    //return result;
-    
-    return y1;
+    return (lerp(y1, y2, w) + 1) / 2;
 }
 
 
-int getIndex(int x, int y, int z)
+[numthreads(8,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    //since xyz is going from 0 to number, it can will return correct number
-    //example: if points per axis is 10, it means that xyz max is 9. So the final number will be 999
-    //this is correct because 10x10x10 is 1000, and 0 - 999 is 1000.
-    int index = z * pointsPerAxis * pointsPerAxis + y * pointsPerAxis + x;
-
-    return index;
-}
-
-
-[numthreads(numThreads, numThreads, numThreads)]
-void CSMain(uint3 id : SV_DispatchThreadID)
-{
-    //for (int i = 0; i < chunkSize; i++)
+    //for (int i = 0; i < 4; i++)
     //{
-    //    cube cube1;
-    //    cube1.position = vertexPositions[i];
-    //    cube1.noise = perlin((vertexPositions[i].x + startingValue[0]) * noiseScale, (vertexPositions[i].y + startingValue[1]) * noiseScale, (vertexPositions[i].z + startingValue[2]) * noiseScale);
-    //    cubes.Append(cube1);
+    //    test[i] = i;
+    //}
+    
+    //for (int x = 0; x < 512; x++)
+    //{
+    //    p[x] = permutation[x % 256];
     //}
 
-    if (id.x >= pointsPerAxis || id.y >= pointsPerAxis || id.z >= pointsPerAxis)
+
+    for (int i = 0; i < chunkSize; i++) //triple foreach loop condensed into 1 for loop
     {
+        //test[i] = i;
         
+        float r = middlePoint[0] + (i % row);
+        float h = middlePoint[1] + (floor((i / height) % height));
+        float c = middlePoint[2] + (floor(i / (height * row)));
+
+        //this always returns the same, maybe put it somewhere in a table?
+        float3 newPos3 = float3(r * size, h * size, c * size);
+        float3 newPos2 = float3((r + 1) * size, h * size, c * size);
+        float3 newPos0 = float3(r * size, (h + 1) * size, c * size);
+        float3 newPos7 = float3(r * size, h * size, (c + 1) * size);
+        float3 newPos1 = float3((r + 1) * size, (h + 1) * size, c * size);
+        float3 newPos6 = float3((r + 1) * size, h * size, (c + 1) * size);
+        float3 newPos4 = float3(r * size, (h + 1) * size, (c + 1) * size);
+        float3 newPos5 = float3((r + 1) * size, (h + 1) * size, (c + 1) * size);
+
+        //dont do this, since this is threaded other items can be added inbetween from other threads
+        //add triangles at once.
+        
+        noisePos[i+0] = perlin((newPos0.x + startingValue[0]) * noiseScale, (newPos0.y + startingValue[1]) * noiseScale, (newPos0.z + startingValue[2]) * noiseScale);
+        noisePos[i+1] = perlin((newPos1.x + startingValue[0]) * noiseScale, (newPos1.y + startingValue[1]) * noiseScale, (newPos1.z + startingValue[2]) * noiseScale);
+        noisePos[i+2] = perlin((newPos2.x + startingValue[0]) * noiseScale, (newPos2.y + startingValue[1]) * noiseScale, (newPos2.z + startingValue[2]) * noiseScale);
+        noisePos[i+3] = perlin((newPos3.x + startingValue[0]) * noiseScale, (newPos3.y + startingValue[1]) * noiseScale, (newPos3.z + startingValue[2]) * noiseScale);
+        noisePos[i+4] = perlin((newPos4.x + startingValue[0]) * noiseScale, (newPos4.y + startingValue[1]) * noiseScale, (newPos4.z + startingValue[2]) * noiseScale);
+        noisePos[i+5] = perlin((newPos5.x + startingValue[0]) * noiseScale, (newPos5.y + startingValue[1]) * noiseScale, (newPos5.z + startingValue[2]) * noiseScale);
+        noisePos[i+6] = perlin((newPos6.x + startingValue[0]) * noiseScale, (newPos6.y + startingValue[1]) * noiseScale, (newPos6.z + startingValue[2]) * noiseScale);
+        noisePos[i+7] = perlin((newPos7.x + startingValue[0]) * noiseScale, (newPos7.y + startingValue[1]) * noiseScale, (newPos7.z + startingValue[2]) * noiseScale); 
+        
+        vertPos[i+0] = newPos0;
+        vertPos[i+1] = newPos1;
+        vertPos[i+2] = newPos2;
+        vertPos[i+3] = newPos3;
+        vertPos[i+4] = newPos4;
+        vertPos[i+5] = newPos5;
+        vertPos[i+6] = newPos6;
+        vertPos[i+7] = newPos7;
     }
-    else
-    {
-        vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, perlin(((id.x * size) + startingValue.x) * noiseScale, ((id.y * size) + startingValue.y) * noiseScale, ((id.z * size) + startingValue.z) * noiseScale)));
-    }
+
 }
