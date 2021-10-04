@@ -288,8 +288,10 @@ static const int triTable[256][16] = {
 int generateConfiguration(float4 corners[8])
 {
     int configurationNumber = 0;
+    //loops through all corners and based on which corner we are on we increase the configuration number
     for (int i = 0; i < 8; i++)
     {
+        //formula for a ground level, the higher the y the less air there is, till a ground level has been reached, then only air.
         if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / groundLevel * 0.25f) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel) / layerThickness)) > cutoff)
         {
             configurationNumber += pow(2, (i));
@@ -344,8 +346,8 @@ float3 interpolate(float4 vertexA, float4 vertexB)
     
     return (vertexA.xyz + vertexB.xyz) / 2;
     
-    float t = (1 - vertexA.w) / (vertexB.w - vertexA.w);
-    return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
+    //float t = (0.5f - vertexA.w) / (vertexB.w - vertexA.w);
+    //return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
 }
 
 
@@ -355,12 +357,6 @@ void createTriangles(float4 corners[8], const int configurationNumber)
     for (int i = 0; triTable[configurationNumber][i] !=  -1; i += 3)
     {
 
-
-    
-        //float3 newVertexA = (corners[edgeIndex[triTable[configurationNumber][i]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i]][1]].xyz) / 2;
-        //float3 newVertexB = (corners[edgeIndex[triTable[configurationNumber][i + 1]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 1]][1]].xyz) / 2;
-        //float3 newVertexC = (corners[edgeIndex[triTable[configurationNumber][i + 2]][0]].xyz + corners[edgeIndex[triTable[configurationNumber][i + 2]][1]].xyz) / 2;
-            
         float3 newVertexA = interpolate(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
         float3 newVertexB = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
         float3 newVertexC = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]] , corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
@@ -382,12 +378,7 @@ void createTriangles(float4 corners[8], const int configurationNumber)
 [numthreads(8,8,8)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    //get corners index
-    //generate configuration
-    //get configuration edges
-    //get corners positions
-    //create triangles
-    
+    //check if we are not over the chunk size (its possible since we cannot dispatch 1,5f compute shader)
     if (id.x >= pointsPerAxis - 1 || id.y >= pointsPerAxis - 1 || id.z >= pointsPerAxis - 1)
     {
         return;

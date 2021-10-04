@@ -21,29 +21,19 @@ public class Generation : MonoBehaviour
 
     [Header("Chunk Settings")]
     public ComputeShader marchingCubeShader;
-    public int row;
-    public int column;
-    public int height;
     public int pointsPerAxis = 10;
     public int size;
 
-    private List<Vector3[]> chunkPositions = new List<Vector3[]>();
     Vector3[] chunkVertexPositions;
 
-
+    //Contains all the currently loaded chunks
     private Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
 
-    public GameObject sphere;
-    public Material mat1;
-    public Material mat2;
-    public Material mat3;
-    public Material mat4;
-    public Material mat5;
-    public Material triangleMat;
-    public Texture texture;
+    public Material terrainMaterial;
 
 
     Triangle[] triangles = new Triangle[1];
+
     //should be equal to computeshader numthreads
     int numThreads = 8;
 
@@ -53,8 +43,10 @@ public class Generation : MonoBehaviour
         //we will use the chunks position to gain the correct values in world space
         GainChunkPositions();
 
+        //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
         setupShaders();
 
+        //spawn the chunks where we start.
         InitializeStartingChunks();
     }
 
@@ -107,6 +99,10 @@ public class Generation : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Destroys chunk on given position, the chunks needs to be contained in the dictionairy 'allChunks', where it will get removed.
+    /// </summary>
+    /// <param name="position">The position on which the chunk needs to be destroyed.</param>
     public void DestroyChunk(Vector3 position)
     {
         if(allChunks.ContainsKey(position))
@@ -116,8 +112,13 @@ public class Generation : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Creates a new chunk with mesh on given position.
+    /// </summary>
+    /// <param name="startingPos">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingPos)
     {
+        //generate a new chunk
         currentPosition = startingPos;
         GameObject chunk = new GameObject();
         chunk.transform.position = startingPos;
@@ -131,15 +132,18 @@ public class Generation : MonoBehaviour
         triangles = noiseGenerator();
 
         //set mesh <- main thread
-        SetMesh(chunk, triangles);
+        SetMesh(chunk);
         allChunks.Add(startingPos, chunk);
     }
 
-    void SetMesh(GameObject chunk, Triangle[] triangles)
+    /// <summary>
+    /// Sets the mesh of given chunk, together with its triangles.
+    /// </summary>
+    /// <param name="chunk">The chunk which needs to be set. </param>
+    void SetMesh(GameObject chunk)
     {
         MeshRenderer meshRenderer = setupMeshRenderer(chunk);
         MeshFilter meshFilter = setupMeshFilter(chunk);
-
 
         Mesh mesh = new Mesh();
         meshFilter.mesh = mesh;
@@ -152,10 +156,14 @@ public class Generation : MonoBehaviour
         mesh.RecalculateTangents();
 
 
-        meshRenderer.material = mat3;
+        meshRenderer.material = terrainMaterial;
     }
 
 
+    /// <summary>
+    /// Generates a noise and with the noise it will generate with the marching cube algorithm triangles
+    /// </summary>
+    /// <returns>An array of triangles used for meshes</returns>
     private Triangle[] noiseGenerator()
     {
         //in the future this might be updated dynamicly because of vertices points per chunk
@@ -174,17 +182,23 @@ public class Generation : MonoBehaviour
         //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
         noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
 
-
+        //get the values
         Vector4[] vertexPerlin = new Vector4[vertexPerlinResults];
         vertexPerlinBuffer.GetData(vertexPerlin);
 
 
-
+        //release the buffers
         vertexPerlinBuffer.Release();
 
+        //with the value we got, run the marching cube generator and return that.
         return marchingCubesGenerator(vertexPerlin);
     }
 
+    /// <summary>
+    /// Using a marching cube algorithm it will generate triangles based on positions of vertices and their appropiate values.
+    /// </summary>
+    /// <param name="vertexPerlin">An array which exists out of a position together with a value which decides if its terrain or not.</param>
+    /// <returns></returns>
     private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin)
     {
         //in the future this might be updated dynamicly because of vertices points per chunk
@@ -192,21 +206,22 @@ public class Generation : MonoBehaviour
         int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
         int maxTriangleCounter = numVoxels * 5;
 
+        //create a buffer for the triangles
         ComputeBuffer triangleBuffer = new ComputeBuffer(maxTriangleCounter , sizeof(float)*3*3, ComputeBufferType.Append);
         triangleBuffer.SetCounterValue(0);
         marchingCubeShader.SetBuffer(0, "triangles", triangleBuffer);
 
+        //creates a buffer for the input of the values
         ComputeBuffer vertexBuffer = new ComputeBuffer(vertexPerlin.Length ,sizeof(float) * 4);
         vertexBuffer.SetCounterValue(0);
         vertexBuffer.SetData(vertexPerlin);
         marchingCubeShader.SetBuffer(0, "vertexPerlin", vertexBuffer);
 
-        int numThreads = 8;
-
+        //calculates how often the compute shader needs to be dispatched.
         float threadsPerAxis = (float)numVoxelsPerAxis / (float)numThreads;
-
         int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
 
+        //dispatch the shader
         marchingCubeShader.Dispatch(0,dispatchAmount,dispatchAmount,dispatchAmount);
 
         //if we dont copy the count over, it means that if the size in the previous chunk was bigger, it wont overwrite the last values
@@ -217,7 +232,7 @@ public class Generation : MonoBehaviour
         triangleCounter.GetData(triangleCountArray);
         int triangleAmount = triangleCountArray[0];
 
-        //get the data
+        //get the triangle data
         Triangle[] triangles = new Triangle[triangleAmount];
         triangleBuffer.GetData(triangles);
 
@@ -226,17 +241,17 @@ public class Generation : MonoBehaviour
         triangleBuffer.Release();
         vertexBuffer.Release();
 
+        //return the triangles we created.
         return triangles;
     }
 
 
-
+    /// <summary>
+    /// Sets all constant values for the chunk
+    /// </summary>
     private void setupShaders()
     {
         noiseShader.SetFloat("chunkSize", pointsPerAxis * pointsPerAxis * pointsPerAxis);
-        noiseShader.SetFloat("row", row);
-        noiseShader.SetFloat("height", height);
-        noiseShader.SetFloat("column", column);
         noiseShader.SetFloat("size", size);
         noiseShader.SetFloat("noiseScale", scale);
         noiseShader.SetFloat("repeat", 9);
@@ -248,6 +263,9 @@ public class Generation : MonoBehaviour
         marchingCubeShader.SetFloat("layerThickness", layerThickness);
     }
 
+    /// <summary>
+    /// Generates the starting chunks when starting the world
+    /// </summary>
     private void InitializeStartingChunks()
     {
         //square radius
@@ -266,17 +284,20 @@ public class Generation : MonoBehaviour
         CreateChunk(currentPosition);
     }
 
+    /// <summary>
+    /// Calculates all vertex points within a chunk at the start, since every vertex position is the same within chunk.
+    /// </summary>
     private void GainChunkPositions()
     {
         //sets all the chunk positions since its always the same in each chunk
-        int chunkSize = row * column * height;
+        int chunkSize = pointsPerAxis * pointsPerAxis * pointsPerAxis;
 
         chunkVertexPositions = new Vector3[chunkSize];
         for (int i = 0; i < chunkSize; i++) //triple foreach loop condensed into 1 for loop
         {
-            float r = i % row;
-            float h = Mathf.FloorToInt((i / height) % height);
-            float c = Mathf.FloorToInt(i / (height * row));
+            float r = i % pointsPerAxis;
+            float h = Mathf.FloorToInt((i / pointsPerAxis) % pointsPerAxis);
+            float c = Mathf.FloorToInt(i / (pointsPerAxis * pointsPerAxis));
             chunkVertexPositions[i] = new Vector3(r * size, h * size, c * size);
         }
 
@@ -285,7 +306,11 @@ public class Generation : MonoBehaviour
 
 
 
-
+    /// <summary>
+    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
+    /// </summary>
+    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
+    /// <returns></returns>
     private MeshRenderer setupMeshRenderer(GameObject chunk)
     {
         MeshRenderer meshRenderer = chunk.GetComponent<MeshRenderer>();
@@ -297,6 +322,11 @@ public class Generation : MonoBehaviour
         return meshRenderer;
     }
 
+    /// <summary>
+    /// Sets up mesh filter of given gameobject. Either gets the mesh filter or creates one.
+    /// </summary>
+    /// <param name="chunk">Given gameobject which needs to contain a mesh filter.</param>
+    /// <returns></returns>
     private MeshFilter setupMeshFilter(GameObject chunk)
     {
         MeshFilter meshFilter = chunk.GetComponent<MeshFilter>();
@@ -308,6 +338,10 @@ public class Generation : MonoBehaviour
         return meshFilter;
     }
 
+    /// <summary>
+    /// Creates a Vector3 array from a triangles array, so it can be used for a mesh.
+    /// </summary>
+    /// <returns>A vector3 array with vertex positions in correct order for triangles.</returns>
     private Vector3[] createVertices()
     {
         Vector3[] vertices = new Vector3[triangles.Length * 3];
@@ -320,6 +354,11 @@ public class Generation : MonoBehaviour
         return vertices;
     }
 
+    /// <summary>
+    /// Generates a int array going from 0 to triangle amount. This list is orderer since all vertices are already in correct order in the triangle array.
+    /// </summary>
+    /// <param name="amount">The amount of triangles are put into the mesh.</param>
+    /// <returns>An int array going from 0 to the amount.</returns>
     private int[] createTriangles(int amount)
     {
         int[] newTriangles = new int[amount];
@@ -330,6 +369,9 @@ public class Generation : MonoBehaviour
         return newTriangles;
     }
 
+    /// <summary>
+    /// Struct for the triangles, since compute shaders run a synchronious we need to give back a list of triangles based of 3 positions.
+    /// </summary>
     struct Triangle
     {
         public Vector3 VertexA;
