@@ -170,9 +170,9 @@ float perlin(float x, float y, float z)
 
     float result = ((lerp(y1, y2, w) + 1) / 2);
     
-    //return result;
+    return result;
     
-    return y1;
+    //return y1;
 }
 
 
@@ -190,20 +190,11 @@ int getIndex(int x, int y, int z)
 [numthreads(numThreads, numThreads, numThreads)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    //for (int i = 0; i < chunkSize; i++)
-    //{
-    //    cube cube1;
-    //    cube1.position = vertexPositions[i];
-    //    cube1.noise = perlin((vertexPositions[i].x + startingValue[0]) * noiseScale, (vertexPositions[i].y + startingValue[1]) * noiseScale, (vertexPositions[i].z + startingValue[2]) * noiseScale);
-    //    cubes.Append(cube1);
-    //}
-
     if (id.x >= pointsPerAxis || id.y >= pointsPerAxis || id.z >= pointsPerAxis)
     {
-        
+        return;
     }
-    else
-    {
-        vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, perlin(((id.x * size) + startingValue.x) * noiseScale, ((id.y * size) + startingValue.y) * noiseScale, ((id.z * size) + startingValue.z) * noiseScale)));
-    }
+
+    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, perlin(((id.x * size) + startingValue.x) * noiseScale, ((id.y * size) + startingValue.y) * noiseScale, ((id.z * size) + startingValue.z) * noiseScale)));
+
 }

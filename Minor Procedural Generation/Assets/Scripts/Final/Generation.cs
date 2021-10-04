@@ -43,14 +43,12 @@ public class Generation : MonoBehaviour
     public Texture texture;
 
 
+    Triangle[] triangles = new Triangle[1];
+    //should be equal to computeshader numthreads
+    int numThreads = 8;
+
     void Start()
     {
-        //1) update variables in shaders/scripts
-        //2) calculate the positions of chunk points
-        //3) spawn starting chunks
-
-
-
         //gain the positions of points within a chunk, this is always the same
         //we will use the chunks position to gain the correct values in world space
         GainChunkPositions();
@@ -69,15 +67,15 @@ public class Generation : MonoBehaviour
 
         if (player.transform.position.x > currentPosition.x + (pointsPerAxis + 6) * size / 2) 
         {
-            Vector3 newPosition = new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
+            Vector3 newPosition = new Vector3(currentPosition.x + pointsPerAxis * size, currentPosition.y, currentPosition.z);
             CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
+            DestroyChunk(new Vector3(currentPosition.x - pointsPerAxis * size, currentPosition.y, currentPosition.z));
         }
         if (player.transform.position.x < currentPosition.x - (pointsPerAxis - 6) * size / 2)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
+            Vector3 newPosition = new Vector3(currentPosition.x - pointsPerAxis* size, currentPosition.y, currentPosition.z);
             CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
+            DestroyChunk(new Vector3(currentPosition.x + pointsPerAxis* size, currentPosition.y, currentPosition.z));
         }
 
 
@@ -109,6 +107,129 @@ public class Generation : MonoBehaviour
         }
     }
 
+    public void DestroyChunk(Vector3 position)
+    {
+        if(allChunks.ContainsKey(position))
+        {
+            Destroy(allChunks[position]);
+            allChunks.Remove(position);
+        }
+    }
+
+    public void CreateChunk(Vector3 startingPos)
+    {
+        currentPosition = startingPos;
+        GameObject chunk = new GameObject();
+        chunk.transform.position = startingPos;
+        chunk.AddComponent<Chunk>();
+        noiseShader.SetVector("startingValue", startingPos);
+        marchingCubeShader.SetVector("startingValue", startingPos);
+
+        //generate noise <- compute shader
+        //generate marching cubes <- compute shader
+        Array.Clear(triangles, 0, triangles.Length);
+        triangles = noiseGenerator();
+
+        //set mesh <- main thread
+        SetMesh(chunk, triangles);
+        allChunks.Add(startingPos, chunk);
+    }
+
+    void SetMesh(GameObject chunk, Triangle[] triangles)
+    {
+        MeshRenderer meshRenderer = setupMeshRenderer(chunk);
+        MeshFilter meshFilter = setupMeshFilter(chunk);
+
+
+        Mesh mesh = new Mesh();
+        meshFilter.mesh = mesh;
+
+        mesh.vertices = createVertices();
+        mesh.triangles = createTriangles(createVertices().Length);
+
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+
+
+        meshRenderer.material = mat3;
+    }
+
+
+    private Triangle[] noiseGenerator()
+    {
+        //in the future this might be updated dynamicly because of vertices points per chunk
+        float threadsPerAxis = (float)pointsPerAxis / (float)numThreads;
+        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
+
+        //generate the size of the list for all the points
+        int vertexPerlinResults = pointsPerAxis * pointsPerAxis * pointsPerAxis;
+        ComputeBuffer vertexPerlinBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 4);
+
+        //reset the counter value because else it starts where it left off previous run
+        vertexPerlinBuffer.SetCounterValue(0);
+        noiseShader.SetBuffer(0, "vertexPerlin", vertexPerlinBuffer);
+
+        //how often the shader will get dispatched in each direction
+        //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
+        noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
+
+
+        Vector4[] vertexPerlin = new Vector4[vertexPerlinResults];
+        vertexPerlinBuffer.GetData(vertexPerlin);
+
+
+
+        vertexPerlinBuffer.Release();
+
+        return marchingCubesGenerator(vertexPerlin);
+    }
+
+    private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin)
+    {
+        //in the future this might be updated dynamicly because of vertices points per chunk
+        int numVoxelsPerAxis = pointsPerAxis - 1;
+        int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
+        int maxTriangleCounter = numVoxels * 5;
+
+        ComputeBuffer triangleBuffer = new ComputeBuffer(maxTriangleCounter , sizeof(float)*3*3, ComputeBufferType.Append);
+        triangleBuffer.SetCounterValue(0);
+        marchingCubeShader.SetBuffer(0, "triangles", triangleBuffer);
+
+        ComputeBuffer vertexBuffer = new ComputeBuffer(vertexPerlin.Length ,sizeof(float) * 4);
+        vertexBuffer.SetCounterValue(0);
+        vertexBuffer.SetData(vertexPerlin);
+        marchingCubeShader.SetBuffer(0, "vertexPerlin", vertexBuffer);
+
+        int numThreads = 8;
+
+        float threadsPerAxis = (float)numVoxelsPerAxis / (float)numThreads;
+
+        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
+
+        marchingCubeShader.Dispatch(0,dispatchAmount,dispatchAmount,dispatchAmount);
+
+        //if we dont copy the count over, it means that if the size in the previous chunk was bigger, it wont overwrite the last values
+        //this means we take over data from the previous chunk to the new chunk
+        ComputeBuffer triangleCounter = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+        ComputeBuffer.CopyCount(triangleBuffer, triangleCounter, 0);
+        int[] triangleCountArray = { 0 };
+        triangleCounter.GetData(triangleCountArray);
+        int triangleAmount = triangleCountArray[0];
+
+        //get the data
+        Triangle[] triangles = new Triangle[triangleAmount];
+        triangleBuffer.GetData(triangles);
+
+        //release all the buffers
+        triangleCounter.Release();
+        triangleBuffer.Release();
+        vertexBuffer.Release();
+
+        return triangles;
+    }
+
+
 
     private void setupShaders()
     {
@@ -123,6 +244,8 @@ public class Generation : MonoBehaviour
 
         marchingCubeShader.SetInt("pointsPerAxis", pointsPerAxis);
         marchingCubeShader.SetFloat("cutoff", cutoff);
+        marchingCubeShader.SetFloat("groundLevel", groundLevel);
+        marchingCubeShader.SetFloat("layerThickness", layerThickness);
     }
 
     private void InitializeStartingChunks()
@@ -130,7 +253,7 @@ public class Generation : MonoBehaviour
         //square radius
         int chunkSize = (radius + radius - 1);
         int chunkRadius = chunkSize * chunkSize * chunkSize;
-        currentPosition = new Vector3(0 - (pointsPerAxis -2 )* size / 2, 0 - (pointsPerAxis - 2) * size / 2, 0 - (pointsPerAxis - 2) * size / 2);
+        currentPosition = new Vector3(0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2);
 
 /*        for(int i = 0; i < chunkRadius; i++)
         {
@@ -142,7 +265,6 @@ public class Generation : MonoBehaviour
         }*/
         CreateChunk(currentPosition);
     }
-
 
     private void GainChunkPositions()
     {
@@ -160,122 +282,53 @@ public class Generation : MonoBehaviour
 
     }
 
-    public void DestroyChunk(Vector3 position)
-    {
-        if(allChunks.ContainsKey(position))
-        {
-            Destroy(allChunks[position]);
-            allChunks.Remove(position);
-        }
-    }
 
-    Triangle[] triangles = new Triangle[1];
 
-    public void CreateChunk(Vector3 startingPos)
-    {
-        currentPosition = startingPos;
-        GameObject chunk = new GameObject();
-        chunk.transform.position = startingPos;
-        chunk.AddComponent<Chunk>();
-        noiseShader.SetVector("startingValue", startingPos);
 
-        //generate noise <- compute shader
-        //generate marching cubes <- compute shader
-        Array.Clear(triangles, 0, triangles.Length);
-        triangles = noiseGenerator();
 
-        //set mesh <- main thread
-        SetMesh(chunk, triangles);
-        allChunks.Add(startingPos, chunk);
-    }
-
-    void SetMesh(GameObject chunk, Triangle[] triangles)
+    private MeshRenderer setupMeshRenderer(GameObject chunk)
     {
         MeshRenderer meshRenderer = chunk.GetComponent<MeshRenderer>();
-        if(meshRenderer == null)
+        if (meshRenderer == null)
         {
             chunk.AddComponent<MeshRenderer>();
             meshRenderer = chunk.GetComponent<MeshRenderer>();
         }
+        return meshRenderer;
+    }
 
-
-
+    private MeshFilter setupMeshFilter(GameObject chunk)
+    {
         MeshFilter meshFilter = chunk.GetComponent<MeshFilter>();
         if (meshFilter == null)
         {
             chunk.AddComponent<MeshFilter>();
             meshFilter = chunk.GetComponent<MeshFilter>();
         }
+        return meshFilter;
+    }
 
-        Mesh mesh = new Mesh();
+    private Vector3[] createVertices()
+    {
         Vector3[] vertices = new Vector3[triangles.Length * 3];
-        for(int i = 0; i < triangles.Length; i++)
+        for (int i = 0; i < triangles.Length; i++)
         {
             vertices[i * 3 + 0] = triangles[i].VertexA;
             vertices[i * 3 + 1] = triangles[i].VertexB;
-            vertices[i * 3+ 2] = triangles[i].VertexC;
+            vertices[i * 3 + 2] = triangles[i].VertexC;
         }
+        return vertices;
+    }
 
-        int[] newTriangles = new int[vertices.Length];
+    private int[] createTriangles(int amount)
+    {
+        int[] newTriangles = new int[amount];
         for (int i = 0; i < newTriangles.Length; i++)
         {
             newTriangles[i] = i;
         }
-
-
-        Texture2D text = new Texture2D(2, 2);
-        text.SetPixels(new Color[4] { Color.white, Color.white, Color.red, Color.red });
-        text.filterMode = FilterMode.Point;
-        text.Apply();
-        meshRenderer.material.mainTexture = text;
-
-
-        meshFilter.mesh = mesh;
-
-        mesh.vertices = vertices;
-        mesh.triangles = newTriangles;
-
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        mesh.RecalculateTangents();
-
-        Array.Clear(vertices, 0, vertices.Length);
-        Array.Clear(newTriangles, 0, newTriangles.Length);
-
-        meshRenderer.material = mat3;
+        return newTriangles;
     }
-
-
-    private Triangle[] noiseGenerator()
-    {
-
-        //should be equal to computeshader numthreads
-        int numThreads = 8;
-
-        float threadsPerAxis = (float)pointsPerAxis / (float)numThreads;
-
-        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
-
-        //generate the size of the list for all the points
-        int vertexPerlinResults = pointsPerAxis * pointsPerAxis * pointsPerAxis;
-        ComputeBuffer vertexPerlinBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 4);
-
-        //reset the counter value because else it starts where it left off previous run
-        vertexPerlinBuffer.SetCounterValue(0);
-        noiseShader.SetBuffer(0, "vertexPerlin", vertexPerlinBuffer);
-
-        //how often the shader will get dispatched in each direction
-        //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
-        noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
-
-        Vector4[] vertexPerlin = new Vector4[vertexPerlinResults];
-
-        vertexPerlinBuffer.GetData(vertexPerlin);
-        vertexPerlinBuffer.Release();
-
-        return marchingCubesGenerator(vertexPerlin);
-    }
-
 
     struct Triangle
     {
@@ -284,41 +337,5 @@ public class Generation : MonoBehaviour
         public Vector3 VertexC;
     };
 
-    
-
-    private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin)
-    {
-        int numVoxelsPerAxis = pointsPerAxis - 1;
-        int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
-        int maxTriangleCounter = numVoxels * 5;
-
-        ComputeBuffer triangleBuffer = new ComputeBuffer(maxTriangleCounter , sizeof(float)*3*3, ComputeBufferType.Append);
-        triangleBuffer.SetCounterValue(0);
-        marchingCubeShader.SetBuffer(0, "triangles", triangleBuffer);
-
-        ComputeBuffer vertexBuffer = new ComputeBuffer(vertexPerlin.Length ,sizeof(float) * 4);
-        vertexBuffer.SetCounterValue(0);
-        vertexBuffer.SetData(vertexPerlin);
-        Array.Clear(vertexPerlin, 0, vertexPerlin.Length);
-        marchingCubeShader.SetBuffer(0, "vertexPerlin", vertexBuffer);
-
-        int numThreads = 8;
-
-        float threadsPerAxis = (float)numVoxelsPerAxis / (float)numThreads;
-
-        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
-
-        marchingCubeShader.Dispatch(0,dispatchAmount,dispatchAmount,dispatchAmount);
-
-
-        Triangle[] triangles = new Triangle[maxTriangleCounter];
-        triangleBuffer.GetData(triangles);
-
-
-        triangleBuffer.Release();
-        vertexBuffer.Release();
-
-        return triangles;
-    }
 
 }

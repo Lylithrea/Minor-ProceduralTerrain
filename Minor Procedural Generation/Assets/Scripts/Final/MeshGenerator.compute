@@ -15,6 +15,9 @@ RWStructuredBuffer<float4> vertexPerlin;
 //variables
 const int pointsPerAxis;
 const float cutoff;
+const float3 startingValue;
+const float1 groundLevel;
+const float1 layerThickness;
 
 static const int edgeIndex[12][2] = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 }, { 6, 7 }, { 4, 7 }, { 4, 0 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
 
@@ -287,12 +290,13 @@ int generateConfiguration(float4 corners[8])
     int configurationNumber = 0;
     for (int i = 0; i < 8; i++)
     {
-        if (corners[i].w > cutoff)
+        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / groundLevel * 0.25f) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel) / layerThickness)) > cutoff)
         {
+            configurationNumber += pow(2, (i));
         }
         else
         {
-           configurationNumber += pow(2, (i));
+            
         }
     }
     
