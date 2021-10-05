@@ -30,6 +30,7 @@ public class Generation : MonoBehaviour
     private Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
 
     public Material terrainMaterial;
+    private Vector3 currentChunk;
 
 
     Triangle[] triangles = new Triangle[1];
@@ -52,7 +53,7 @@ public class Generation : MonoBehaviour
 
     private void Update()
     {
-        //SpawnChunksBasedOnPlayerMovement();
+        SpawnChunksBasedOnPlayerMovement();
 
     }
 
@@ -62,47 +63,103 @@ public class Generation : MonoBehaviour
         //check if the new chunks already exist
         //generate/destroy chunks based on position
 
-        if (player.transform.position.x > currentPosition.x + (pointsPerAxis + 6) * size / 2)
+        if (Mathf.Floor(player.transform.position.x / (pointsPerAxis * size)) > currentChunk.x )
         {
-            Vector3 newPosition = new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
+            currentChunk.x += 1;
+            Vector3 startPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
+            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.x = currentChunk.x - radius ;
+            endPos.x = currentChunk.x - radius;
+            DestroyMultipleChunks(startPos, endPos);
         }
-        if (player.transform.position.x < currentPosition.x - (pointsPerAxis - 6) * size / 2)
+        if (Mathf.Floor(player.transform.position.x / (pointsPerAxis * size)) < currentChunk.x)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
-        }
-
-
-        if (player.transform.position.y > currentPosition.y + (pointsPerAxis + 6) * size / 2)
-        {
-            Vector3 newPosition = new Vector3(currentPosition.x, currentPosition.y + (pointsPerAxis - 2) * size, currentPosition.z);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x, currentPosition.y - (pointsPerAxis - 2) * size, currentPosition.z));
-        }
-        if (player.transform.position.y < currentPosition.y - (pointsPerAxis - 6) * size / 2)
-        {
-            Vector3 newPosition = new Vector3(currentPosition.x, currentPosition.y - (pointsPerAxis - 2) * size, currentPosition.z);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x, currentPosition.y + (pointsPerAxis - 2) * size, currentPosition.z));
+            currentChunk.x -= 1;
+            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
+            Vector3 endPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.x = currentChunk.x + radius;
+            endPos.x = currentChunk.x + radius;
+            DestroyMultipleChunks(startPos, endPos);
         }
 
 
-        if (player.transform.position.z > currentPosition.z + (pointsPerAxis + 6) * size / 2)
+        if (Mathf.Floor(player.transform.position.y / (pointsPerAxis * size)) > currentChunk.y)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x, currentPosition.y, currentPosition.z + (pointsPerAxis - 2) * size);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x, currentPosition.y, currentPosition.z - (pointsPerAxis - 2) * size));
+            currentChunk.y += 1;
+            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y + radius - 1, currentChunk.z - radius + 1);
+            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.y = currentChunk.y - radius;
+            endPos.y = currentChunk.y - radius;
+            DestroyMultipleChunks(startPos, endPos);
         }
-        if (player.transform.position.z < currentPosition.z - (pointsPerAxis - 6) * size / 2)
+        if (Mathf.Floor(player.transform.position.y / (pointsPerAxis * size)) < currentChunk.y)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x, currentPosition.y, currentPosition.z - (pointsPerAxis - 2) * size);
-            CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x, currentPosition.y, currentPosition.z + (pointsPerAxis - 2) * size));
+            currentChunk.y -= 1;
+            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
+            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y - radius + 1, currentChunk.z + radius - 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.y = currentChunk.y + radius;
+            endPos.y = currentChunk.y + radius;
+            DestroyMultipleChunks(startPos, endPos);
+        }
+
+        if (Mathf.Floor(player.transform.position.z / (pointsPerAxis * size)) > currentChunk.z)
+        {
+            currentChunk.z += 1;
+            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z + radius - 1);
+            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.z = currentChunk.z - radius;
+            endPos.z = currentChunk.z - radius;
+            DestroyMultipleChunks(startPos, endPos);
+        }
+
+
+        if (Mathf.Floor(player.transform.position.z / (pointsPerAxis * size)) < currentChunk.z)
+        {
+            currentChunk.z -= 1;
+            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
+            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z - radius + 1);
+            CreateMultipleChunks(startPos, endPos);
+            startPos.z = currentChunk.z + radius;
+            endPos.z = currentChunk.z + radius;
+            DestroyMultipleChunks(startPos, endPos);
+        }
+
+
+    }
+
+    public void CreateMultipleChunks(Vector3 startPos, Vector3 endPos)
+    {
+        for(float i = startPos.x; i <= endPos.x; i++)
+        {
+            for (float j = startPos.y; j <= endPos.y; j++)
+            {
+                for (float k = startPos.z; k <= endPos.z; k++)
+                {
+                    CreateChunk(new Vector3(i * (pointsPerAxis - 1) * size, j * (pointsPerAxis - 1) * size, k * (pointsPerAxis - 1) * size));
+                }
+            }
         }
     }
+
+    public void DestroyMultipleChunks(Vector3 startPos, Vector3 endPos)
+    {
+        for (float i = startPos.x; i <= endPos.x; i++)
+        {
+            for (float j = startPos.y; j <= endPos.y; j++)
+            {
+                for (float k = startPos.z; k <= endPos.z; k++)
+                {
+                    DestroyChunk(new Vector3(i * pointsPerAxis * size, j * pointsPerAxis * size, k * pointsPerAxis * size));
+                }
+            }
+        }
+    }
+
 
     /// <summary>
     /// Destroys chunk on given position, the chunks needs to be contained in the dictionairy 'allChunks', where it will get removed.
@@ -110,7 +167,10 @@ public class Generation : MonoBehaviour
     /// <param name="position">The position on which the chunk needs to be destroyed.</param>
     public void DestroyChunk(Vector3 position)
     {
-        if(allChunks.ContainsKey(position))
+        position.x -= Mathf.Floor(position.x / (pointsPerAxis * size));
+        position.y -= Mathf.Floor(position.y / (pointsPerAxis * size));
+        position.z -= Mathf.Floor(position.z / (pointsPerAxis * size));
+        if (allChunks.ContainsKey(position))
         {
             Destroy(allChunks[position]);
             allChunks.Remove(position);
@@ -123,11 +183,15 @@ public class Generation : MonoBehaviour
     /// <param name="startingPos">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingPos)
     {
+        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
+        startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
+        startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));
         if (!allChunks.ContainsKey(startingPos))
         {
             //generate a new chunk
             currentPosition = startingPos;
             GameObject chunk = new GameObject();
+
             chunk.transform.position = startingPos;
             chunk.AddComponent<Chunk>();
             noiseShader.SetVector("startingValue", startingPos);
@@ -279,16 +343,6 @@ public class Generation : MonoBehaviour
         //square radius
         int chunkSize = (radius + radius - 1);
         int chunkRadius = chunkSize * chunkSize * chunkSize;
-        currentPosition = new Vector3(0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2);
-
-        /*        for(int i = 0; i < chunkRadius; i++)
-                {
-                    float r = i % chunkSize;
-                    float h = Mathf.FloorToInt((i / chunkSize) % chunkSize);
-                    float c = Mathf.FloorToInt(i / (chunkSize * chunkSize));
-
-                    CreateChunk(new Vector3(r * (pointsPerAxis - 2) * size , h * (pointsPerAxis - 2) * size, c * (pointsPerAxis - 2) * size));
-                }*/
 
         //spawn chunks based on players position
         //the position of a chunk is at the 0,0,0 position of the chunk (thus not the middle of the chunk)
@@ -296,6 +350,7 @@ public class Generation : MonoBehaviour
         chunkpos.x = Mathf.Floor(player.transform.position.x / (pointsPerAxis * size));
         chunkpos.y = Mathf.Floor(player.transform.position.y / (pointsPerAxis * size));
         chunkpos.z = Mathf.Floor(player.transform.position.z / (pointsPerAxis * size));
+        currentChunk = chunkpos;
 
         for (int i = 0; i < chunkRadius; i++)
         {
@@ -311,9 +366,6 @@ public class Generation : MonoBehaviour
             CreateChunk(newpos);
         }
 
-        
-
-        //CreateChunk(currentPosition);
     }
 
     /// <summary>
