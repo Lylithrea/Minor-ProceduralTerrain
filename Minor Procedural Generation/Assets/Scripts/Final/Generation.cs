@@ -52,22 +52,27 @@ public class Generation : MonoBehaviour
 
     private void Update()
     {
+        //SpawnChunksBasedOnPlayerMovement();
 
+    }
+
+    private void SpawnChunksBasedOnPlayerMovement()
+    {
         //check if players position has changed
         //check if the new chunks already exist
         //generate/destroy chunks based on position
 
-        if (player.transform.position.x > currentPosition.x + (pointsPerAxis + 6) * size / 2) 
+        if (player.transform.position.x > currentPosition.x + (pointsPerAxis + 6) * size / 2)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x + pointsPerAxis * size, currentPosition.y, currentPosition.z);
+            Vector3 newPosition = new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
             CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x - pointsPerAxis * size, currentPosition.y, currentPosition.z));
+            DestroyChunk(new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
         }
         if (player.transform.position.x < currentPosition.x - (pointsPerAxis - 6) * size / 2)
         {
-            Vector3 newPosition = new Vector3(currentPosition.x - pointsPerAxis* size, currentPosition.y, currentPosition.z);
+            Vector3 newPosition = new Vector3(currentPosition.x - (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z);
             CreateChunk(newPosition);
-            DestroyChunk(new Vector3(currentPosition.x + pointsPerAxis* size, currentPosition.y, currentPosition.z));
+            DestroyChunk(new Vector3(currentPosition.x + (pointsPerAxis - 2) * size, currentPosition.y, currentPosition.z));
         }
 
 
@@ -118,22 +123,25 @@ public class Generation : MonoBehaviour
     /// <param name="startingPos">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingPos)
     {
-        //generate a new chunk
-        currentPosition = startingPos;
-        GameObject chunk = new GameObject();
-        chunk.transform.position = startingPos;
-        chunk.AddComponent<Chunk>();
-        noiseShader.SetVector("startingValue", startingPos);
-        marchingCubeShader.SetVector("startingValue", startingPos);
+        if (!allChunks.ContainsKey(startingPos))
+        {
+            //generate a new chunk
+            currentPosition = startingPos;
+            GameObject chunk = new GameObject();
+            chunk.transform.position = startingPos;
+            chunk.AddComponent<Chunk>();
+            noiseShader.SetVector("startingValue", startingPos);
+            marchingCubeShader.SetVector("startingValue", startingPos);
 
-        //generate noise <- compute shader
-        //generate marching cubes <- compute shader
-        Array.Clear(triangles, 0, triangles.Length);
-        triangles = noiseGenerator();
+            //generate noise <- compute shader
+            //generate marching cubes <- compute shader
+            Array.Clear(triangles, 0, triangles.Length);
+            triangles = noiseGenerator();
 
-        //set mesh <- main thread
-        SetMesh(chunk);
-        allChunks.Add(startingPos, chunk);
+            //set mesh <- main thread
+            SetMesh(chunk);
+            allChunks.Add(startingPos, chunk);
+        }
     }
 
     /// <summary>
@@ -273,15 +281,39 @@ public class Generation : MonoBehaviour
         int chunkRadius = chunkSize * chunkSize * chunkSize;
         currentPosition = new Vector3(0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2, 0 - pointsPerAxis * size / 2);
 
-/*        for(int i = 0; i < chunkRadius; i++)
+        /*        for(int i = 0; i < chunkRadius; i++)
+                {
+                    float r = i % chunkSize;
+                    float h = Mathf.FloorToInt((i / chunkSize) % chunkSize);
+                    float c = Mathf.FloorToInt(i / (chunkSize * chunkSize));
+
+                    CreateChunk(new Vector3(r * (pointsPerAxis - 2) * size , h * (pointsPerAxis - 2) * size, c * (pointsPerAxis - 2) * size));
+                }*/
+
+        //spawn chunks based on players position
+        //the position of a chunk is at the 0,0,0 position of the chunk (thus not the middle of the chunk)
+        Vector3 chunkpos = new Vector3();
+        chunkpos.x = Mathf.Floor(player.transform.position.x / (pointsPerAxis * size));
+        chunkpos.y = Mathf.Floor(player.transform.position.y / (pointsPerAxis * size));
+        chunkpos.z = Mathf.Floor(player.transform.position.z / (pointsPerAxis * size));
+
+        for (int i = 0; i < chunkRadius; i++)
         {
             float r = i % chunkSize;
             float h = Mathf.FloorToInt((i / chunkSize) % chunkSize);
             float c = Mathf.FloorToInt(i / (chunkSize * chunkSize));
 
-            CreateChunk(new Vector3(r * pointsPerAxis * size , h * pointsPerAxis * size, c * pointsPerAxis * size));
-        }*/
-        CreateChunk(currentPosition);
+
+            Vector3 newpos = new Vector3();
+            newpos.x = (chunkpos.x - radius + 1 + r) * size * pointsPerAxis;
+            newpos.y = (chunkpos.y - radius + 1 + h) * size * pointsPerAxis;
+            newpos.z = (chunkpos.z - radius + 1 + c) * size * pointsPerAxis;
+            CreateChunk(newpos);
+        }
+
+        
+
+        //CreateChunk(currentPosition);
     }
 
     /// <summary>
