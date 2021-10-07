@@ -344,6 +344,29 @@ float3 interpolate(float4 vertexA, float4 vertexB)
     //}
     //return vertexA.xyz + test * (vertexB.xyz - vertexA.xyz);
     
+    float alpha;
+    //This vector is used to save the interpolated point between the two given vectors.
+    float3 interpolatedVector;
+        
+    if (abs(cutoff - vertexA.w) < 0.00001f)
+        return vertexA.xyz;
+    if (abs(cutoff - vertexB.w) < 0.00001f)
+        return vertexB.xyz;
+    if (abs(vertexA.w - vertexB.w) < 0.00001f)
+        return vertexA.xyz;
+
+    
+    alpha = (cutoff - vertexA.w) / (vertexB.w - vertexA.w);
+        
+    //Component based linear interpolation
+    interpolatedVector.x = vertexA.x + alpha * (vertexB.x - vertexA.x);
+    interpolatedVector.y = vertexA.y + alpha * (vertexB.y - vertexA.y);
+    interpolatedVector.z = vertexA.z + alpha * (vertexB.z - vertexA.z);
+
+    //return interpolatedVector;
+
+    
+    
     return (vertexA.xyz + vertexB.xyz) / 2;
     
     //float t = (0.5f - vertexA.w) / (vertexB.w - vertexA.w);

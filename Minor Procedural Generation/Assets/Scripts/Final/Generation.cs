@@ -63,7 +63,7 @@ public class Generation : MonoBehaviour
         //check if the new chunks already exist
         //generate/destroy chunks based on position
 
-        if (Mathf.Floor(player.transform.position.x / (pointsPerAxis * size)) > currentChunk.x )
+        if (Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size)) > currentChunk.x )
         {
             currentChunk.x += 1;
             Vector3 startPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
@@ -73,7 +73,7 @@ public class Generation : MonoBehaviour
             endPos.x = currentChunk.x - radius;
             DestroyMultipleChunks(startPos, endPos);
         }
-        if (Mathf.Floor(player.transform.position.x / (pointsPerAxis * size)) < currentChunk.x)
+        if (Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size)) < currentChunk.x)
         {
             currentChunk.x -= 1;
             Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
@@ -85,7 +85,7 @@ public class Generation : MonoBehaviour
         }
 
 
-        if (Mathf.Floor(player.transform.position.y / (pointsPerAxis * size)) > currentChunk.y)
+        if (Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size)) > currentChunk.y)
         {
             currentChunk.y += 1;
             Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y + radius - 1, currentChunk.z - radius + 1);
@@ -95,7 +95,7 @@ public class Generation : MonoBehaviour
             endPos.y = currentChunk.y - radius;
             DestroyMultipleChunks(startPos, endPos);
         }
-        if (Mathf.Floor(player.transform.position.y / (pointsPerAxis * size)) < currentChunk.y)
+        if (Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size)) < currentChunk.y)
         {
             currentChunk.y -= 1;
             Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
@@ -106,7 +106,7 @@ public class Generation : MonoBehaviour
             DestroyMultipleChunks(startPos, endPos);
         }
 
-        if (Mathf.Floor(player.transform.position.z / (pointsPerAxis * size)) > currentChunk.z)
+        if (Mathf.Floor(player.transform.position.z / ((pointsPerAxis - 1) * size)) > currentChunk.z)
         {
             currentChunk.z += 1;
             Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z + radius - 1);
@@ -118,7 +118,7 @@ public class Generation : MonoBehaviour
         }
 
 
-        if (Mathf.Floor(player.transform.position.z / (pointsPerAxis * size)) < currentChunk.z)
+        if (Mathf.Floor(player.transform.position.z / ((pointsPerAxis - 1) * size)) < currentChunk.z)
         {
             currentChunk.z -= 1;
             Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
@@ -154,7 +154,7 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    DestroyChunk(new Vector3(i * pointsPerAxis * size, j * pointsPerAxis * size, k * pointsPerAxis * size));
+                    DestroyChunk(new Vector3(i * (pointsPerAxis - 1) * size, j * (pointsPerAxis - 1) * size, k * (pointsPerAxis - 1) * size));
                 }
             }
         }
@@ -167,9 +167,10 @@ public class Generation : MonoBehaviour
     /// <param name="position">The position on which the chunk needs to be destroyed.</param>
     public void DestroyChunk(Vector3 position)
     {
-        position.x -= Mathf.Floor(position.x / (pointsPerAxis * size));
+/*        position.x -= Mathf.Floor(position.x / (pointsPerAxis * size));
         position.y -= Mathf.Floor(position.y / (pointsPerAxis * size));
-        position.z -= Mathf.Floor(position.z / (pointsPerAxis * size));
+        position.z -= Mathf.Floor(position.z / (pointsPerAxis * size));*/
+
         if (allChunks.ContainsKey(position))
         {
             Destroy(allChunks[position]);
@@ -183,9 +184,10 @@ public class Generation : MonoBehaviour
     /// <param name="startingPos">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingPos)
     {
-        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
+/*        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
         startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
-        startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));
+        startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));*/
+
         if (!allChunks.ContainsKey(startingPos))
         {
             //generate a new chunk
@@ -360,9 +362,10 @@ public class Generation : MonoBehaviour
 
 
             Vector3 newpos = new Vector3();
-            newpos.x = (chunkpos.x - radius + 1 + r) * size * pointsPerAxis;
-            newpos.y = (chunkpos.y - radius + 1 + h) * size * pointsPerAxis;
-            newpos.z = (chunkpos.z - radius + 1 + c) * size * pointsPerAxis;
+            newpos.x = (chunkpos.x - radius + 1 + r) * size * (pointsPerAxis - 1);
+            newpos.y = (chunkpos.y - radius + 1 + h) * size * (pointsPerAxis - 1);
+            newpos.z = (chunkpos.z - radius + 1 + c) * size * (pointsPerAxis - 1);
+
             CreateChunk(newpos);
         }
 
