@@ -23,6 +23,8 @@ public class Generation : MonoBehaviour
     public ComputeShader marchingCubeShader;
     public int pointsPerAxis = 10;
     public int size;
+    [Range(0,2)]
+    public int levelOfDetail;
 
     Vector3[] chunkVertexPositions;
 
@@ -40,6 +42,7 @@ public class Generation : MonoBehaviour
 
     void Start()
     {
+
         //gain the positions of points within a chunk, this is always the same
         //we will use the chunks position to gain the correct values in world space
         GainChunkPositions();
@@ -206,11 +209,12 @@ public class Generation : MonoBehaviour
             //generate noise <- compute shader
             //generate marching cubes <- compute shader
             Array.Clear(triangles, 0, triangles.Length);
-            Vector3 playerPos = currentPosition * size;
-            if (playerPos == startingChunk)
+            Debug.Log("Current chunk : " + currentChunk);
+            Debug.Log("Starting chunk : " + startingChunk);
+            if (currentChunk == startingChunk)
             {
                 Debug.Log("Same!");
-                triangles = noiseGenerator(1);
+                triangles = noiseGenerator(levelOfDetail + 1);
             }
             else
             {
@@ -260,7 +264,7 @@ public class Generation : MonoBehaviour
         int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
         noiseShader.SetInt("pointsPerAxis", currentPoints);
         noiseShader.SetFloat("size", size / points);
-
+        noiseShader.SetFloat("chunkSize", currentPoints * currentPoints * currentPoints);
         //generate the size of the list for all the points
         int vertexPerlinResults = currentPoints * currentPoints * currentPoints;
         ComputeBuffer vertexPerlinBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 4);
