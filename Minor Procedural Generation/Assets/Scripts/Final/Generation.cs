@@ -10,7 +10,7 @@ public class Generation : MonoBehaviour
 
     [Header("Noise Settings")]
     public ComputeShader noiseShader;
-    [Range(0.43f, 0.47f)]
+    //[Range(0.43f, 0.47f)]
     public float scale;
 
     [Header("Generation Settings")]
@@ -167,10 +167,6 @@ public class Generation : MonoBehaviour
     /// <param name="position">The position on which the chunk needs to be destroyed.</param>
     public void DestroyChunk(Vector3 position)
     {
-/*        position.x -= Mathf.Floor(position.x / (pointsPerAxis * size));
-        position.y -= Mathf.Floor(position.y / (pointsPerAxis * size));
-        position.z -= Mathf.Floor(position.z / (pointsPerAxis * size));*/
-
         if (allChunks.ContainsKey(position))
         {
             Destroy(allChunks[position]);
@@ -184,10 +180,6 @@ public class Generation : MonoBehaviour
     /// <param name="startingPos">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingPos)
     {
-/*        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
-        startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
-        startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));*/
-
         if (!allChunks.ContainsKey(startingPos))
         {
             //generate a new chunk
@@ -252,6 +244,23 @@ public class Generation : MonoBehaviour
         vertexPerlinBuffer.SetCounterValue(0);
         noiseShader.SetBuffer(0, "vertexPerlin", vertexPerlinBuffer);
 
+
+
+
+        var prng = new System.Random(100);
+        var offsets = new Vector3[1];
+        float offsetRange = 1000;
+        for (int i = 0; i < 1; i++)
+        {
+            offsets[i] = new Vector3((float)prng.NextDouble() * 2 - 1, (float)prng.NextDouble() * 2 - 1, (float)prng.NextDouble() * 2 - 1) * offsetRange;
+        }
+
+        var offsetsBuffer = new ComputeBuffer(offsets.Length, sizeof(float) * 3);
+        offsetsBuffer.SetData(offsets);
+        noiseShader.SetBuffer(0, "offsets", offsetsBuffer);
+
+
+
         //how often the shader will get dispatched in each direction
         //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
         noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
@@ -260,9 +269,15 @@ public class Generation : MonoBehaviour
         Vector4[] vertexPerlin = new Vector4[vertexPerlinResults];
         vertexPerlinBuffer.GetData(vertexPerlin);
 
+        for(int i = 0; i < 10; i++)
+        {
+            Debug.Log("Vertex position : (" + vertexPerlin[i].x + "," + vertexPerlin[i].y + "," + vertexPerlin[i].z + ") with value: " + vertexPerlin[i].w);
+        }
 
         //release the buffers
         vertexPerlinBuffer.Release();
+
+        offsetsBuffer.Release();
 
         //with the value we got, run the marching cube generator and return that.
         return marchingCubesGenerator(vertexPerlin);
@@ -335,6 +350,9 @@ public class Generation : MonoBehaviour
         marchingCubeShader.SetFloat("cutoff", cutoff);
         marchingCubeShader.SetFloat("groundLevel", groundLevel);
         marchingCubeShader.SetFloat("layerThickness", layerThickness);
+
+
+
     }
 
     /// <summary>

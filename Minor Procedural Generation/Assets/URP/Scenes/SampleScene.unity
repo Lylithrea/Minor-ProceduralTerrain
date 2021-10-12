@@ -1114,11 +1114,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1789553035}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
-  scale: 0.4494
+  scale: 2.57
   radius: 2
   groundLevel: 100
   layerThickness: 5
-  cutoff: 0.57
+  cutoff: 9.67
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 10
   size: 1
