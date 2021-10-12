@@ -30,7 +30,7 @@ public class Generation : MonoBehaviour
     private Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
 
     public Material terrainMaterial;
-    private Vector3 currentChunk;
+    public Vector3 currentChunk;
 
 
     Triangle[] triangles = new Triangle[1];
@@ -140,7 +140,7 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    CreateChunk(new Vector3(i * (pointsPerAxis - 1) * size, j * (pointsPerAxis - 1) * size, k * (pointsPerAxis - 1) * size));
+                    CreateChunk(new Vector3(i , j , k ));
                 }
             }
         }
@@ -154,7 +154,7 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    DestroyChunk(new Vector3(i * (pointsPerAxis - 1) * size, j * (pointsPerAxis - 1) * size, k * (pointsPerAxis - 1) * size));
+                    DestroyChunk(new Vector3(i, j , k));
                 }
             }
         }
@@ -181,32 +181,46 @@ public class Generation : MonoBehaviour
     /// <summary>
     /// Creates a new chunk with mesh on given position.
     /// </summary>
-    /// <param name="startingPos">The middle point of the chunk position in world space.</param>
-    public void CreateChunk(Vector3 startingPos)
+    /// <param name="startingChunk">The middle point of the chunk position in world space.</param>
+    public void CreateChunk(Vector3 startingChunk)
     {
-/*        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
-        startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
-        startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));*/
+        /*        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
+                startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
+                startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));*/
 
-        if (!allChunks.ContainsKey(startingPos))
+        //*(pointsPerAxis - 1) * size)
+
+        if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-            currentPosition = startingPos;
+            currentPosition = startingChunk;
             GameObject chunk = new GameObject();
+            chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
-            chunk.transform.position = startingPos;
+            Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;
+            chunk.transform.position = chunkPosition;
             chunk.AddComponent<Chunk>();
-            noiseShader.SetVector("startingValue", startingPos);
-            marchingCubeShader.SetVector("startingValue", startingPos);
+            noiseShader.SetVector("startingValue", chunkPosition);
+            marchingCubeShader.SetVector("startingValue", chunkPosition);
 
             //generate noise <- compute shader
             //generate marching cubes <- compute shader
             Array.Clear(triangles, 0, triangles.Length);
-            triangles = noiseGenerator();
+            Vector3 playerPos = currentPosition * size;
+            if (playerPos == startingChunk)
+            {
+                Debug.Log("Same!");
+                triangles = noiseGenerator(1);
+            }
+            else
+            {
+                triangles = noiseGenerator(1);
+            }
+
 
             //set mesh <- main thread
             SetMesh(chunk);
-            allChunks.Add(startingPos, chunk);
+            allChunks.Add(startingChunk, chunk);
         }
     }
 
@@ -238,14 +252,17 @@ public class Generation : MonoBehaviour
     /// Generates a noise and with the noise it will generate with the marching cube algorithm triangles
     /// </summary>
     /// <returns>An array of triangles used for meshes</returns>
-    private Triangle[] noiseGenerator()
+    private Triangle[] noiseGenerator(int points)
     {
         //in the future this might be updated dynamicly because of vertices points per chunk
-        float threadsPerAxis = (float)pointsPerAxis / (float)numThreads;
+        int currentPoints = pointsPerAxis * points;
+        float threadsPerAxis = (float)currentPoints / (float)numThreads;
         int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
+        noiseShader.SetInt("pointsPerAxis", currentPoints);
+        noiseShader.SetFloat("size", size / points);
 
         //generate the size of the list for all the points
-        int vertexPerlinResults = pointsPerAxis * pointsPerAxis * pointsPerAxis;
+        int vertexPerlinResults = currentPoints * currentPoints * currentPoints;
         ComputeBuffer vertexPerlinBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 4);
 
         //reset the counter value because else it starts where it left off previous run
@@ -265,7 +282,7 @@ public class Generation : MonoBehaviour
         vertexPerlinBuffer.Release();
 
         //with the value we got, run the marching cube generator and return that.
-        return marchingCubesGenerator(vertexPerlin);
+        return marchingCubesGenerator(vertexPerlin, points);
     }
 
     /// <summary>
@@ -273,12 +290,17 @@ public class Generation : MonoBehaviour
     /// </summary>
     /// <param name="vertexPerlin">An array which exists out of a position together with a value which decides if its terrain or not.</param>
     /// <returns></returns>
-    private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin)
+    private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin, int points)
     {
         //in the future this might be updated dynamicly because of vertices points per chunk
-        int numVoxelsPerAxis = pointsPerAxis - 1;
+        int currentPoints = pointsPerAxis * points;
+
+        int numVoxelsPerAxis = currentPoints - 1;
         int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
         int maxTriangleCounter = numVoxels * 5;
+
+
+        marchingCubeShader.SetInt("pointsPerAxis", currentPoints);
 
         //create a buffer for the triangles
         ComputeBuffer triangleBuffer = new ComputeBuffer(maxTriangleCounter , sizeof(float)*3*3, ComputeBufferType.Append);
@@ -362,9 +384,9 @@ public class Generation : MonoBehaviour
 
 
             Vector3 newpos = new Vector3();
-            newpos.x = (chunkpos.x - radius + 1 + r) * size * (pointsPerAxis - 1);
-            newpos.y = (chunkpos.y - radius + 1 + h) * size * (pointsPerAxis - 1);
-            newpos.z = (chunkpos.z - radius + 1 + c) * size * (pointsPerAxis - 1);
+            newpos.x = (chunkpos.x - radius + 1 + r);
+            newpos.y = (chunkpos.y - radius + 1 + h);
+            newpos.z = (chunkpos.z - radius + 1 + c);
 
             CreateChunk(newpos);
         }

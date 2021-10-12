@@ -1123,6 +1123,7 @@ MonoBehaviour:
   pointsPerAxis: 10
   size: 1
   terrainMaterial: {fileID: 2100000, guid: cb8d1bb951a922246882ead18b0da40a, type: 2}
+  currentChunk: {x: 0, y: 0, z: 0}
 --- !u!4 &1789553037
 Transform:
   m_ObjectHideFlags: 0
