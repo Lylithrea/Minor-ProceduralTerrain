@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Noise;
+using MarchCubes;
 
 public class Generation : MonoBehaviour
 {
@@ -35,6 +37,7 @@ public class Generation : MonoBehaviour
     public Vector3 currentChunk;
 
 
+
     Triangle[] triangles = new Triangle[1];
 
     //should be equal to computeshader numthreads
@@ -50,8 +53,24 @@ public class Generation : MonoBehaviour
         //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
         setupShaders();
 
+        Perlin.noiseShader = noiseShader;
+        Perlin.pointsPerAxis = pointsPerAxis;
+        Perlin.numThreads = numThreads;
+        Perlin.size = size;
+
+        MarchingCube.pointsPerAxis = pointsPerAxis;
+        MarchingCube.numThreads = numThreads;
+        MarchingCube.marchingCubeShader = marchingCubeShader;
+
+/*        noiseScript.noiseShader = noiseShader;
+        noiseScript.pointsPerAxis = pointsPerAxis;
+        noiseScript.numThreads = numThreads;
+        noiseScript.size = size;*/
+
         //spawn the chunks where we start.
         InitializeStartingChunks();
+
+        
     }
 
     private void Update()
@@ -187,11 +206,6 @@ public class Generation : MonoBehaviour
     /// <param name="startingChunk">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingChunk)
     {
-        /*        startingPos.x -= Mathf.Floor(startingPos.x /  (pointsPerAxis * size));
-                startingPos.y -= Mathf.Floor(startingPos.y / (pointsPerAxis * size));
-                startingPos.z -= Mathf.Floor(startingPos.z / (pointsPerAxis * size));*/
-
-        //*(pointsPerAxis - 1) * size)
 
         if (!allChunks.ContainsKey(startingChunk))
         {
@@ -209,18 +223,16 @@ public class Generation : MonoBehaviour
             //generate noise <- compute shader
             //generate marching cubes <- compute shader
             Array.Clear(triangles, 0, triangles.Length);
-            Debug.Log("Current chunk : " + currentChunk);
-            Debug.Log("Starting chunk : " + startingChunk);
             if (currentChunk == startingChunk)
             {
-                Debug.Log("Same!");
-                triangles = noiseGenerator(levelOfDetail + 1);
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
             }
             else
             {
-                triangles = noiseGenerator(1);
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
             }
 
+            
 
             //set mesh <- main thread
             SetMesh(chunk);
@@ -252,98 +264,7 @@ public class Generation : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Generates a noise and with the noise it will generate with the marching cube algorithm triangles
-    /// </summary>
-    /// <returns>An array of triangles used for meshes</returns>
-    private Triangle[] noiseGenerator(int points)
-    {
-        //in the future this might be updated dynamicly because of vertices points per chunk
-        int currentPoints = pointsPerAxis * points;
-        float threadsPerAxis = (float)currentPoints / (float)numThreads;
-        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
-        noiseShader.SetInt("pointsPerAxis", currentPoints);
-        noiseShader.SetFloat("size", size / points);
-        noiseShader.SetFloat("chunkSize", currentPoints * currentPoints * currentPoints);
-        //generate the size of the list for all the points
-        int vertexPerlinResults = currentPoints * currentPoints * currentPoints;
-        ComputeBuffer vertexPerlinBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 4);
 
-        //reset the counter value because else it starts where it left off previous run
-        vertexPerlinBuffer.SetCounterValue(0);
-        noiseShader.SetBuffer(0, "vertexPerlin", vertexPerlinBuffer);
-
-        //how often the shader will get dispatched in each direction
-        //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
-        noiseShader.Dispatch(0, dispatchAmount, dispatchAmount, dispatchAmount);
-
-        //get the values
-        Vector4[] vertexPerlin = new Vector4[vertexPerlinResults];
-        vertexPerlinBuffer.GetData(vertexPerlin);
-
-
-        //release the buffers
-        vertexPerlinBuffer.Release();
-
-        //with the value we got, run the marching cube generator and return that.
-        return marchingCubesGenerator(vertexPerlin, points);
-    }
-
-    /// <summary>
-    /// Using a marching cube algorithm it will generate triangles based on positions of vertices and their appropiate values.
-    /// </summary>
-    /// <param name="vertexPerlin">An array which exists out of a position together with a value which decides if its terrain or not.</param>
-    /// <returns></returns>
-    private Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin, int points)
-    {
-        //in the future this might be updated dynamicly because of vertices points per chunk
-        int currentPoints = pointsPerAxis * points;
-
-        int numVoxelsPerAxis = currentPoints - 1;
-        int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
-        int maxTriangleCounter = numVoxels * 5;
-
-
-        marchingCubeShader.SetInt("pointsPerAxis", currentPoints);
-
-        //create a buffer for the triangles
-        ComputeBuffer triangleBuffer = new ComputeBuffer(maxTriangleCounter , sizeof(float)*3*3, ComputeBufferType.Append);
-        triangleBuffer.SetCounterValue(0);
-        marchingCubeShader.SetBuffer(0, "triangles", triangleBuffer);
-
-        //creates a buffer for the input of the values
-        ComputeBuffer vertexBuffer = new ComputeBuffer(vertexPerlin.Length ,sizeof(float) * 4);
-        vertexBuffer.SetCounterValue(0);
-        vertexBuffer.SetData(vertexPerlin);
-        marchingCubeShader.SetBuffer(0, "vertexPerlin", vertexBuffer);
-
-        //calculates how often the compute shader needs to be dispatched.
-        float threadsPerAxis = (float)numVoxelsPerAxis / (float)numThreads;
-        int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
-
-        //dispatch the shader
-        marchingCubeShader.Dispatch(0,dispatchAmount,dispatchAmount,dispatchAmount);
-
-        //if we dont copy the count over, it means that if the size in the previous chunk was bigger, it wont overwrite the last values
-        //this means we take over data from the previous chunk to the new chunk
-        ComputeBuffer triangleCounter = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-        ComputeBuffer.CopyCount(triangleBuffer, triangleCounter, 0);
-        int[] triangleCountArray = { 0 };
-        triangleCounter.GetData(triangleCountArray);
-        int triangleAmount = triangleCountArray[0];
-
-        //get the triangle data
-        Triangle[] triangles = new Triangle[triangleAmount];
-        triangleBuffer.GetData(triangles);
-
-        //release all the buffers
-        triangleCounter.Release();
-        triangleBuffer.Release();
-        vertexBuffer.Release();
-
-        //return the triangles we created.
-        return triangles;
-    }
 
 
     /// <summary>
@@ -485,7 +406,7 @@ public class Generation : MonoBehaviour
     /// <summary>
     /// Struct for the triangles, since compute shaders run a synchronious we need to give back a list of triangles based of 3 positions.
     /// </summary>
-    struct Triangle
+    public struct Triangle
     {
         public Vector3 VertexA;
         public Vector3 VertexB;
