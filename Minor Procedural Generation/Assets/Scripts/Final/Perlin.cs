@@ -26,6 +26,7 @@ namespace Noise
             noiseShader.SetInt("pointsPerAxis", currentPoints);
             noiseShader.SetFloat("size", size / points);
             noiseShader.SetFloat("chunkSize", currentPoints * currentPoints * currentPoints);
+
             //generate the size of the list for all the points
             int vertexPerlinResults = currentPoints * currentPoints * currentPoints;
 

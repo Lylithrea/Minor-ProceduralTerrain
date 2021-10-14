@@ -1210,13 +1210,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1789553035}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
-  scale: 0.4397
-  radius: 3
+  scale: 0.4488
+  radius: 4
   groundLevel: 100
-  layerThickness: 5
+  layerThickness: 7
   cutoff: 0.52
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
-  pointsPerAxis: 10
+  pointsPerAxis: 20
   size: 2
   levelOfDetail: 1
   terrainMaterial: {fileID: 2100000, guid: cb8d1bb951a922246882ead18b0da40a, type: 2}

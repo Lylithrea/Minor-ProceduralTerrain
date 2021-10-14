@@ -4,9 +4,8 @@ using UnityEngine;
 
 namespace MarchCubes
 {
-    public class MarchingCube : MonoBehaviour
+    public class MarchingCube : ScriptableObject
     {
-
         public static int pointsPerAxis;
         public static int numThreads;
         public static ComputeShader marchingCubeShader;
@@ -25,7 +24,6 @@ namespace MarchCubes
             int numVoxelsPerAxis = currentPoints - 1;
             int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;
             int maxTriangleCounter = numVoxels * 5;
-
 
             marchingCubeShader.SetInt("pointsPerAxis", currentPoints);
 

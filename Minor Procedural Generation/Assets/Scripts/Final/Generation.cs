@@ -4,6 +4,8 @@ using UnityEngine;
 using System;
 using Noise;
 using MarchCubes;
+using System.Threading;
+
 
 public class Generation : MonoBehaviour
 {
@@ -36,12 +38,18 @@ public class Generation : MonoBehaviour
     public Material terrainMaterial;
     public Vector3 currentChunk;
 
+    private Queue<Vector3> chunkQueue = new Queue<Vector3>();
+    private Queue<Vector3> destroyChunkQueue = new Queue<Vector3>();
+    private Queue<GameObject> reusableChunkQueue = new Queue<GameObject>();
 
 
     Triangle[] triangles = new Triangle[1];
 
     //should be equal to computeshader numthreads
     int numThreads = 8;
+    private bool spawningChunksRunning = false;
+    private bool destroyingChunksRunning = false;
+
 
     void Start()
     {
@@ -51,21 +59,9 @@ public class Generation : MonoBehaviour
         GainChunkPositions();
 
         //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
-        setupShaders();
+        setupValues();
 
-        Perlin.noiseShader = noiseShader;
-        Perlin.pointsPerAxis = pointsPerAxis;
-        Perlin.numThreads = numThreads;
-        Perlin.size = size;
 
-        MarchingCube.pointsPerAxis = pointsPerAxis;
-        MarchingCube.numThreads = numThreads;
-        MarchingCube.marchingCubeShader = marchingCubeShader;
-
-/*        noiseScript.noiseShader = noiseShader;
-        noiseScript.pointsPerAxis = pointsPerAxis;
-        noiseScript.numThreads = numThreads;
-        noiseScript.size = size;*/
 
         //spawn the chunks where we start.
         InitializeStartingChunks();
@@ -73,11 +69,45 @@ public class Generation : MonoBehaviour
         
     }
 
+
     private void Update()
     {
         SpawnChunksBasedOnPlayerMovement();
-
     }
+
+    IEnumerator SpawnChunks()
+    {
+        spawningChunksRunning = true;
+        while (chunkQueue.Count > 0)
+        {
+            Vector3 chunkPos = chunkQueue.Dequeue();
+            if (reusableChunkQueue.Count > 0)
+            {
+                GameObject chunk = reusableChunkQueue.Dequeue();
+                UpdateChunk(chunk, chunkPos);
+            }
+            else
+            {
+                CreateChunk(chunkPos);
+            }
+            yield return null;
+        }
+        spawningChunksRunning = false;
+    }
+
+    IEnumerator DestroyChunks()
+    {
+        destroyingChunksRunning = true;
+        while (destroyChunkQueue.Count > 0)
+        {
+            Vector3 chunkPos = destroyChunkQueue.Dequeue();
+            DestroyChunk(chunkPos);
+            yield return null;
+        }
+        destroyingChunksRunning = false;
+    }
+
+
 
     private void SpawnChunksBasedOnPlayerMovement()
     {
@@ -162,9 +192,14 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    CreateChunk(new Vector3(i , j , k ));
+                    //CreateChunk(new Vector3(i , j , k ));
+                    chunkQueue.Enqueue(new Vector3(i, j, k));
                 }
             }
+        }
+        if (!spawningChunksRunning)
+        {
+            StartCoroutine(SpawnChunks());
         }
     }
 
@@ -176,9 +211,15 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    DestroyChunk(new Vector3(i, j , k));
+                    //DestroyChunk(new Vector3(i, j , k));
+                    destroyChunkQueue.Enqueue(new Vector3(i, j, k));
+                    //reusableChunkQueue.Enqueue(allChunks[new Vector3(i, j, k)]);
                 }
             }
+        }
+        if (!destroyingChunksRunning)
+        {
+            StartCoroutine(DestroyChunks());
         }
     }
 
@@ -189,10 +230,6 @@ public class Generation : MonoBehaviour
     /// <param name="position">The position on which the chunk needs to be destroyed.</param>
     public void DestroyChunk(Vector3 position)
     {
-/*        position.x -= Mathf.Floor(position.x / (pointsPerAxis * size));
-        position.y -= Mathf.Floor(position.y / (pointsPerAxis * size));
-        position.z -= Mathf.Floor(position.z / (pointsPerAxis * size));*/
-
         if (allChunks.ContainsKey(position))
         {
             Destroy(allChunks[position]);
@@ -206,7 +243,6 @@ public class Generation : MonoBehaviour
     /// <param name="startingChunk">The middle point of the chunk position in world space.</param>
     public void CreateChunk(Vector3 startingChunk)
     {
-
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
@@ -240,6 +276,40 @@ public class Generation : MonoBehaviour
         }
     }
 
+    public void UpdateChunk(GameObject chunk, Vector3 startingChunk)
+    {
+        if (!allChunks.ContainsKey(startingChunk))
+        {
+            //generate a new chunk
+            currentPosition = startingChunk;
+            chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
+
+            Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;
+            chunk.transform.position = chunkPosition;
+            noiseShader.SetVector("startingValue", chunkPosition);
+            marchingCubeShader.SetVector("startingValue", chunkPosition);
+
+            //generate noise <- compute shader
+            //generate marching cubes <- compute shader
+            Array.Clear(triangles, 0, triangles.Length);
+            if (currentChunk == startingChunk)
+            {
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
+            }
+            else
+            {
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+            }
+
+
+
+            //set mesh <- main thread
+            SetMesh(chunk);
+            allChunks.Add(startingChunk, chunk);
+        }
+    }
+
+
     /// <summary>
     /// Sets the mesh of given chunk, together with its triangles.
     /// </summary>
@@ -264,13 +334,10 @@ public class Generation : MonoBehaviour
     }
 
 
-
-
-
     /// <summary>
     /// Sets all constant values for the chunk
     /// </summary>
-    private void setupShaders()
+    private void setupValues()
     {
         noiseShader.SetFloat("chunkSize", pointsPerAxis * pointsPerAxis * pointsPerAxis);
         noiseShader.SetFloat("size", size);
@@ -282,6 +349,16 @@ public class Generation : MonoBehaviour
         marchingCubeShader.SetFloat("cutoff", cutoff);
         marchingCubeShader.SetFloat("groundLevel", groundLevel);
         marchingCubeShader.SetFloat("layerThickness", layerThickness);
+
+        Perlin.noiseShader = noiseShader;
+        Perlin.pointsPerAxis = pointsPerAxis;
+        Perlin.numThreads = numThreads;
+        Perlin.size = size;
+
+        MarchingCube.pointsPerAxis = pointsPerAxis;
+        MarchingCube.numThreads = numThreads;
+        MarchingCube.marchingCubeShader = marchingCubeShader;
+
     }
 
     /// <summary>

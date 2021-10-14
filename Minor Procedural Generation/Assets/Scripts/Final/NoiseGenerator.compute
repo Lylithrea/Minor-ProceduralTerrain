@@ -111,3 +111,4 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, perlin(((id.x * size) + startingValue.x) * noiseScale, ((id.y * size) + startingValue.y) * noiseScale, ((id.z * size) + startingValue.z) * noiseScale)));
 
 }
+
