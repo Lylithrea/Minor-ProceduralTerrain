@@ -42,6 +42,7 @@ public class Generation : MonoBehaviour
     private Queue<Vector3> chunkQueue = new Queue<Vector3>();
     private Queue<Vector3> destroyChunkQueue = new Queue<Vector3>();
     private Queue<GameObject> reusableChunkQueue = new Queue<GameObject>();
+    private Queue<Chunks> updateQueue = new Queue<Chunks>();
 
 
     Triangle[] triangles = new Triangle[1];
@@ -51,6 +52,11 @@ public class Generation : MonoBehaviour
     private bool spawningChunksRunning = false;
     private bool destroyingChunksRunning = false;
 
+    struct Chunks
+    {
+        public GameObject chunk;
+        public int points;
+    }
 
     void Start()
     {
@@ -93,6 +99,7 @@ public class Generation : MonoBehaviour
             }
             yield return null;
         }
+        StartCoroutine(UpdateChunkMeshes());
         spawningChunksRunning = false;
     }
 
@@ -106,6 +113,16 @@ public class Generation : MonoBehaviour
             yield return null;
         }
         destroyingChunksRunning = false;
+    }
+
+    IEnumerator UpdateChunkMeshes()
+    {
+        while(updateQueue.Count > 0)
+        {
+            Chunks chunk = updateQueue.Dequeue();
+            UpdateMesh(chunk.chunk, chunk.points);
+            yield return null;
+        }
     }
 
 
@@ -212,7 +229,11 @@ public class Generation : MonoBehaviour
             {
                 for (float k = startPos.z; k <= endPos.z; k++)
                 {
-                    UpdateMesh(allChunks[new Vector3(i,j,k)], 1);
+                    Chunks newchunk;
+                    newchunk.chunk = allChunks[new Vector3(i, j, k)];
+                    newchunk.points = levelOfDetail + 1;
+                    updateQueue.Enqueue(newchunk);
+                    //UpdateMesh(allChunks[new Vector3(i,j,k)], 1);
                 }
             }
         }
@@ -241,7 +262,11 @@ public class Generation : MonoBehaviour
 
                 if (allChunks.ContainsKey(checkChunkPos))
                 {
-                    UpdateMesh(allChunks[checkChunkPos], levelOfDetail + 1);
+                    Chunks newchunk;
+                    newchunk.chunk = allChunks[checkChunkPos];
+                    newchunk.points = levelOfDetail + 1;
+                    updateQueue.Enqueue(newchunk);
+                    //UpdateMesh(allChunks[checkChunkPos], levelOfDetail + 1);
                 }
             }
 
@@ -294,7 +319,8 @@ public class Generation : MonoBehaviour
     {
         if (allChunks.ContainsKey(position))
         {
-            Destroy(allChunks[position]);
+            //Destroy(allChunks[position]);
+            reusableChunkQueue.Enqueue(allChunks[position]);
             allChunks.Remove(position);
         }
     }
@@ -396,7 +422,7 @@ public class Generation : MonoBehaviour
 
             //generate noise <- compute shader
             //generate marching cubes <- compute shader
-            Array.Clear(triangles, 0, triangles.Length);
+            //Array.Clear(triangles, 0, triangles.Length);
             triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(points), points);
 
             //set mesh <- main thread
@@ -518,13 +544,11 @@ public class Generation : MonoBehaviour
     /// <returns></returns>
     private MeshRenderer setupMeshRenderer(GameObject chunk)
     {
-        MeshRenderer meshRenderer = chunk.GetComponent<MeshRenderer>();
-        if (meshRenderer == null)
+        if (chunk.GetComponent<MeshRenderer>() == null)
         {
             chunk.AddComponent<MeshRenderer>();
-            meshRenderer = chunk.GetComponent<MeshRenderer>();
         }
-        return meshRenderer;
+        return chunk.GetComponent<MeshRenderer>();
     }
 
     /// <summary>
@@ -534,13 +558,11 @@ public class Generation : MonoBehaviour
     /// <returns></returns>
     private MeshFilter setupMeshFilter(GameObject chunk)
     {
-        MeshFilter meshFilter = chunk.GetComponent<MeshFilter>();
-        if (meshFilter == null)
+        if (chunk.GetComponent<MeshFilter>() == null)
         {
             chunk.AddComponent<MeshFilter>();
-            meshFilter = chunk.GetComponent<MeshFilter>();
         }
-        return meshFilter;
+        return chunk.GetComponent<MeshFilter>();
     }
 
     /// <summary>
