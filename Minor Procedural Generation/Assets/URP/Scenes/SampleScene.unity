@@ -1211,14 +1211,15 @@ MonoBehaviour:
   player: {fileID: 1789553035}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
   scale: 0.4488
-  radius: 4
+  radius: 3
   groundLevel: 100
   layerThickness: 7
   cutoff: 0.52
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 2
+  size: 1
   levelOfDetail: 1
+  levelOfDetailRadius: 2
   terrainMaterial: {fileID: 2100000, guid: cb8d1bb951a922246882ead18b0da40a, type: 2}
   currentChunk: {x: 0, y: 0, z: 0}
 --- !u!4 &1789553037

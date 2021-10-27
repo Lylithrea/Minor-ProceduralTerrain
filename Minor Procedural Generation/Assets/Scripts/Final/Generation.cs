@@ -29,6 +29,7 @@ public class Generation : MonoBehaviour
     public int size;
     [Range(0,2)]
     public int levelOfDetail;
+    public int levelOfDetailRadius;
 
     Vector3[] chunkVertexPositions;
 
@@ -124,6 +125,9 @@ public class Generation : MonoBehaviour
             startPos.x = currentChunk.x - radius ;
             endPos.x = currentChunk.x - radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x - levelOfDetailRadius, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius + 1);
+            endPos = new Vector3(currentChunk.x - levelOfDetailRadius, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius - 1);
+            UpdateMultipleMeshes(startPos, endPos);
         }
         if (Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size)) < currentChunk.x)
         {
@@ -134,6 +138,9 @@ public class Generation : MonoBehaviour
             startPos.x = currentChunk.x + radius;
             endPos.x = currentChunk.x + radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x + levelOfDetailRadius, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius + 1);
+            endPos = new Vector3(currentChunk.x + levelOfDetailRadius, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius - 1);
+            UpdateMultipleMeshes(startPos, endPos);
         }
 
 
@@ -146,6 +153,9 @@ public class Generation : MonoBehaviour
             startPos.y = currentChunk.y - radius;
             endPos.y = currentChunk.y - radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius, currentChunk.z - levelOfDetailRadius + 1);
+            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y - levelOfDetailRadius, currentChunk.z + levelOfDetailRadius - 1);
+            UpdateMultipleMeshes(startPos, endPos);
         }
         if (Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size)) < currentChunk.y)
         {
@@ -156,6 +166,9 @@ public class Generation : MonoBehaviour
             startPos.y = currentChunk.y + radius;
             endPos.y = currentChunk.y + radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y + levelOfDetailRadius, currentChunk.z - levelOfDetailRadius + 1);
+            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius, currentChunk.z + levelOfDetailRadius - 1);
+            UpdateMultipleMeshes(startPos, endPos);
         }
 
         if (Mathf.Floor(player.transform.position.z / ((pointsPerAxis - 1) * size)) > currentChunk.z)
@@ -167,6 +180,9 @@ public class Generation : MonoBehaviour
             startPos.z = currentChunk.z - radius;
             endPos.z = currentChunk.z - radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius);
+            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z - levelOfDetailRadius);
+            UpdateMultipleMeshes(startPos, endPos);
         }
 
 
@@ -179,13 +195,59 @@ public class Generation : MonoBehaviour
             startPos.z = currentChunk.z + radius;
             endPos.z = currentChunk.z + radius;
             DestroyMultipleChunks(startPos, endPos);
+            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z + levelOfDetailRadius);
+            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius);
+            UpdateMultipleMeshes(startPos, endPos);
         }
 
 
     }
 
+
+    public void UpdateMultipleMeshes(Vector3 startPos, Vector3 endPos)
+    {
+        for (float i = startPos.x; i <= endPos.x; i++)
+        {
+            for (float j = startPos.y; j <= endPos.y; j++)
+            {
+                for (float k = startPos.z; k <= endPos.z; k++)
+                {
+                    UpdateMesh(allChunks[new Vector3(i,j,k)], 1);
+                }
+            }
+        }
+    }
+
+
     public void CreateMultipleChunks(Vector3 startPos, Vector3 endPos)
     {
+        //update vertex count
+        if (levelOfDetailRadius > 0)
+        {
+            int levelOfDetailSize = (levelOfDetailRadius + levelOfDetailRadius - 1);
+            int chunkChecks = levelOfDetailSize * levelOfDetailSize * levelOfDetailSize;
+            for (int i = 0; i < chunkChecks; i++)
+            {
+                float r = i % levelOfDetailSize;
+                float h = Mathf.FloorToInt((i / levelOfDetailSize) % levelOfDetailSize);
+                float c = Mathf.FloorToInt(i / (levelOfDetailSize * levelOfDetailSize));
+
+                Vector3 checkChunkPos = currentChunk;
+                checkChunkPos.x = checkChunkPos.x - levelOfDetailRadius + 1 + r;
+                checkChunkPos.y = checkChunkPos.y - levelOfDetailRadius + 1 + h;
+                checkChunkPos.z = checkChunkPos.z - levelOfDetailRadius + 1 + c;
+
+                //Debug.Log("Chunk pos: " + checkChunkPos);
+
+                if (allChunks.ContainsKey(checkChunkPos))
+                {
+                    UpdateMesh(allChunks[checkChunkPos], levelOfDetail + 1);
+                }
+            }
+
+        }
+
+
         for(float i = startPos.x; i <= endPos.x; i++)
         {
             for (float j = startPos.y; j <= endPos.y; j++)
@@ -276,6 +338,23 @@ public class Generation : MonoBehaviour
         }
     }
 
+
+    public void CheckLevelOfDetail(int levelOfDetail, Vector3 startingChunk)
+    {
+        if(levelOfDetail == 1)
+        {
+            if (currentChunk == startingChunk)
+            {
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
+                SetMesh(allChunks[startingChunk]);
+            }
+            else
+            {
+                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+            }
+        }
+    }
+
     public void UpdateChunk(GameObject chunk, Vector3 startingChunk)
     {
         if (!allChunks.ContainsKey(startingChunk))
@@ -307,6 +386,21 @@ public class Generation : MonoBehaviour
             SetMesh(chunk);
             allChunks.Add(startingChunk, chunk);
         }
+    }
+
+    public void UpdateMesh(GameObject chunk, int points)
+    {
+        //Debug.Log("Updating mesh");
+            noiseShader.SetVector("startingValue", chunk.transform.position);
+            marchingCubeShader.SetVector("startingValue", chunk.transform.position);
+
+            //generate noise <- compute shader
+            //generate marching cubes <- compute shader
+            Array.Clear(triangles, 0, triangles.Length);
+            triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(points), points);
+
+            //set mesh <- main thread
+            SetMesh(chunk);
     }
 
 
