@@ -35,6 +35,7 @@ public class Generation : MonoBehaviour
 
     //Contains all the currently loaded chunks
     private Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
+    private List<Vector3> currentPlayerChunks = new List<Vector3>();
 
     public Material terrainMaterial;
     public Vector3 currentChunk;
@@ -79,8 +80,70 @@ public class Generation : MonoBehaviour
 
     private void Update()
     {
-        SpawnChunksBasedOnPlayerMovement();
+        //SpawnChunksBasedOnPlayerMovement();
+        testDynamicChunks();
     }
+
+    Vector3 playerPos = new Vector3(0,0,0);
+    private void testDynamicChunks()
+    {
+        playerPos.x = Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size));
+        playerPos.y = Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size));
+        playerPos.z = Mathf.Floor(player.transform.position.z / ((pointsPerAxis -1 ) * size));
+        if (playerPos != currentChunk)
+        {
+            currentChunk = playerPos;
+            UpdateChunks();
+        }
+    }
+
+    private void UpdateChunks()
+    {
+        int minX = (int)currentChunk.x - radius + 1;
+        int maxX = (int)currentChunk.x + radius;
+
+        int minY = (int)currentChunk.y - radius + 1;
+        int maxY = (int)currentChunk.y + radius;
+
+        int minZ = (int)currentChunk.z - radius + 1;
+        int maxZ = (int)currentChunk.z + radius;
+
+        chunkQueue.Clear();
+        currentPlayerChunks.Clear();
+
+        for ( int x = minX; x < maxX; x++)
+        {
+            for (int y = minY; y < maxY; y++)
+            {
+                for (int z = minZ; z < maxZ; z++)
+                {
+                    if(!allChunks.ContainsKey(new Vector3(x, y, z)))
+                    {
+                        chunkQueue.Enqueue(new Vector3(x, y, z));
+                        currentPlayerChunks.Add(new Vector3(x, y, z));
+                    }
+                }
+            }
+        }
+
+
+        foreach(KeyValuePair<Vector3, GameObject> chunk in allChunks)
+        {
+            if (!currentPlayerChunks.Contains(chunk.Key))
+            {
+                destroyChunkQueue.Enqueue(chunk.Key);
+            }
+        }
+        if (!spawningChunksRunning)
+        {
+            StartCoroutine(SpawnChunks());
+        }
+        if (!destroyingChunksRunning)
+        {
+            StartCoroutine(DestroyChunks());
+        }
+    }
+
 
     IEnumerator SpawnChunks()
     {
@@ -112,6 +175,7 @@ public class Generation : MonoBehaviour
             DestroyChunk(chunkPos);
             yield return null;
         }
+
         destroyingChunksRunning = false;
     }
 
@@ -334,7 +398,7 @@ public class Generation : MonoBehaviour
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-            currentPosition = startingChunk;
+
             GameObject chunk = new GameObject();
             chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
@@ -386,7 +450,8 @@ public class Generation : MonoBehaviour
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-            currentPosition = startingChunk;
+            allChunks.Remove(chunk.transform.position);
+
             chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
             Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;

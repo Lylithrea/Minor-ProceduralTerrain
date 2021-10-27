@@ -8,7 +8,7 @@ public class ClickableNode : MonoBehaviour
     public bool isEnabled = false;
     private bool firstHit = false;
 
-    private void OnDrawGizmos()
+/*    private void OnDrawGizmos()
     {
         //add stuff here to do with enabled
         if(Selection.activeObject != null && Selection.activeObject.name == this.transform.name)
@@ -29,14 +29,14 @@ public class ClickableNode : MonoBehaviour
         }
         Gizmos.DrawSphere(this.transform.position, 0.05f);
 
-    }
+    }*/
 
-    private void OnDrawGizmosSelected()
+/*    private void OnDrawGizmosSelected()
     {
         if (!firstHit)
         {
             firstHit = true;
             isEnabled = !isEnabled;
         }
-    }
+    }*/
 }
