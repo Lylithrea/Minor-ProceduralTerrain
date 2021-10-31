@@ -13,16 +13,35 @@ const float3 startingValue;
 const float1 groundLevel;
 const float1 layerThickness;
 
+Texture2D<float4> groundTex;
+const float1 height;
+const float1 frequency;
 
 
-int generateConfiguration(float4 corners[8])
+
+int generateConfiguration(float4 corners[8], int idx, int idz)
 {
     int configurationNumber = 0;
+    
+    uint w, h;
+    groundTex.GetDimensions(w, h);
+    
+    
     //loops through all corners and based on which corner we are on we increase the configuration number
     for (int i = 0; i < 8; i++)
     {
         //formula for a ground level, the higher the y the less air there is, till a ground level has been reached, then only air.
-        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / groundLevel * 0.25f) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel) / layerThickness)) > cutoff)
+        //if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / groundLevel * 0.25f) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel) / layerThickness)) > cutoff)
+        //{
+        //    configurationNumber += pow(2, (i));
+        //}        
+        float2 vec;
+        vec.x = corners[i].x + startingValue.x;
+        vec.y = corners[i].z + startingValue.z;
+        float test = groundTex[vec / frequency % w];
+        test *= height;
+        
+        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + test)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - test) / layerThickness)) > cutoff)
         {
             configurationNumber += pow(2, (i));
         }
@@ -136,7 +155,7 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     };
     
     //generate configuration
-    int configurationNumber = generateConfiguration(corners);
+    int configurationNumber = generateConfiguration(corners, id.x, id.z);
     
 
     

@@ -14,8 +14,10 @@ public class Generation : MonoBehaviour
 
     [Header("Noise Settings")]
     public ComputeShader noiseShader;
-    [Range(0.43f, 0.47f)]
+    //[Range(0.43f, 0.47f)]
     public float scale;
+    public float groundLevelHeight = 250;
+    public float frequency = 25;
 
     [Header("Generation Settings")]
     public int radius;
@@ -53,6 +55,8 @@ public class Generation : MonoBehaviour
     private bool spawningChunksRunning = false;
     private bool destroyingChunksRunning = false;
 
+    public Texture groundTexture;
+
     struct Chunks
     {
         public GameObject chunk;
@@ -82,6 +86,11 @@ public class Generation : MonoBehaviour
     {
         //SpawnChunksBasedOnPlayerMovement();
         testDynamicChunks();
+
+   /*     if (!destroyingChunksRunning)
+        {
+            checkDestroyingChunks();
+        }*/
     }
 
     Vector3 playerPos = new Vector3(0,0,0);
@@ -127,23 +136,30 @@ public class Generation : MonoBehaviour
         }
 
 
-        foreach(KeyValuePair<Vector3, GameObject> chunk in allChunks)
+        if (!spawningChunksRunning)
+        {
+            StartCoroutine(SpawnChunks());
+        }
+
+
+
+    }
+
+    void checkDestroyingChunks()
+    {
+        destroyChunkQueue.Clear();
+        foreach (KeyValuePair<Vector3, GameObject> chunk in allChunks)
         {
             if (!currentPlayerChunks.Contains(chunk.Key))
             {
                 destroyChunkQueue.Enqueue(chunk.Key);
             }
         }
-        if (!spawningChunksRunning)
-        {
-            StartCoroutine(SpawnChunks());
-        }
         if (!destroyingChunksRunning)
         {
             StartCoroutine(DestroyChunks());
         }
     }
-
 
     IEnumerator SpawnChunks()
     {
@@ -163,6 +179,10 @@ public class Generation : MonoBehaviour
             yield return null;
         }
         StartCoroutine(UpdateChunkMeshes());
+        //checkDestroyingChunks();
+/*        if (!destroyingChunksRunning) {
+            StartCoroutine(DestroyChunks());
+        }*/
         spawningChunksRunning = false;
     }
 
@@ -450,7 +470,7 @@ public class Generation : MonoBehaviour
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-            allChunks.Remove(chunk.transform.position);
+            //allChunks.Remove(chunk.transform.position);
 
             chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
@@ -534,6 +554,9 @@ public class Generation : MonoBehaviour
         marchingCubeShader.SetFloat("cutoff", cutoff);
         marchingCubeShader.SetFloat("groundLevel", groundLevel);
         marchingCubeShader.SetFloat("layerThickness", layerThickness);
+        marchingCubeShader.SetTexture(0, "groundTex", groundTexture);
+        marchingCubeShader.SetFloat("height", groundLevelHeight);
+        marchingCubeShader.SetFloat("frequency", frequency);
 
         Perlin.noiseShader = noiseShader;
         Perlin.pointsPerAxis = pointsPerAxis;
