@@ -99,6 +99,7 @@ public class Generation : MonoBehaviour
         playerPos.x = Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size));
         playerPos.y = Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size));
         playerPos.z = Mathf.Floor(player.transform.position.z / ((pointsPerAxis -1 ) * size));
+        //so it does not update every update loop
         if (playerPos != currentChunk)
         {
             currentChunk = playerPos;

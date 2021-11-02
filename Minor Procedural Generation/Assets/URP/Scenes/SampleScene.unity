@@ -1637,7 +1637,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52bd61ad744f55d41877ae0f8c1c7f82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 1687258581}
+  player: {fileID: 1789553035}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
   scale: 6.73
   groundLevelHeight: 350
