@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using MarchCubes;
+using Noise;
 
 public class Chunk : MonoBehaviour
 {
@@ -11,6 +13,8 @@ public class Chunk : MonoBehaviour
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
     MeshCollider meshCollider;
+
+    public Generation generator;
 
     public void DestroyOrDisable()
     {
@@ -71,5 +75,74 @@ public class Chunk : MonoBehaviour
         }
 
         meshRenderer.material = mat;
+    }
+
+
+    public void updateVertexDensity(int density)
+    {
+        generator.noiseShader.SetVector("startingValue", transform.position);
+        generator.marchingCubeShader.SetVector("startingValue", transform.position);
+
+        //generate noise <- compute shader
+        //generate marching cubes <- compute shader
+        generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(density), density);
+
+        //set mesh <- main thread
+        SetMesh();
+    }
+
+
+    public void chunkSetup()
+    {
+        generator.noiseShader.SetVector("startingValue", gameObject.transform.position);
+        generator.marchingCubeShader.SetVector("startingValue", gameObject.transform.position);
+    }
+
+
+    public void SetMesh()
+    {
+        MeshRenderer meshRenderer = setupMeshRenderer();
+        MeshFilter meshFilter = setupMeshFilter();
+
+        Mesh mesh = new Mesh();
+        meshFilter.mesh = mesh;
+
+        mesh.vertices = generator.createVertices();
+        mesh.triangles = generator.createTriangles(mesh.vertices.Length);
+
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+
+
+        meshRenderer.material = generator.terrainMaterial;
+    }
+
+    /// <summary>
+    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
+    /// </summary>
+    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
+    /// <returns></returns>
+    private MeshRenderer setupMeshRenderer()
+    {
+        if (gameObject.GetComponent<MeshRenderer>() == null)
+        {
+            gameObject.AddComponent<MeshRenderer>();
+        }
+        return gameObject.GetComponent<MeshRenderer>();
+    }
+
+    /// <summary>
+    /// Sets up mesh filter of given gameobject. Either gets the mesh filter or creates one.
+    /// </summary>
+    /// <param name="chunk">Given gameobject which needs to contain a mesh filter.</param>
+    /// <returns></returns>
+    private MeshFilter setupMeshFilter()
+    {
+        if (gameObject.GetComponent<MeshFilter>() == null)
+        {
+            gameObject.AddComponent<MeshFilter>();
+        }
+        return gameObject.GetComponent<MeshFilter>();
     }
 }

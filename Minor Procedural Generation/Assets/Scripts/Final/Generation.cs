@@ -48,7 +48,7 @@ public class Generation : MonoBehaviour
     private Queue<Chunks> updateQueue = new Queue<Chunks>();
 
 
-    Triangle[] triangles = new Triangle[1];
+    public Triangle[] triangles = new Triangle[1];
 
     //should be equal to computeshader numthreads
     int numThreads = 8;
@@ -426,6 +426,8 @@ public class Generation : MonoBehaviour
             Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;
             chunk.transform.position = chunkPosition;
             chunk.AddComponent<Chunk>();
+            chunk.GetComponent<Chunk>().generator = this;
+
             noiseShader.SetVector("startingValue", chunkPosition);
             marchingCubeShader.SetVector("startingValue", chunkPosition);
 
@@ -441,10 +443,10 @@ public class Generation : MonoBehaviour
                 triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
             }
 
-            
+
 
             //set mesh <- main thread
-            SetMesh(chunk);
+            chunk.GetComponent<Chunk>().SetMesh();
             allChunks.Add(startingChunk, chunk);
         }
     }
@@ -457,7 +459,7 @@ public class Generation : MonoBehaviour
             if (currentChunk == startingChunk)
             {
                 triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
-                SetMesh(allChunks[startingChunk]);
+                allChunks[startingChunk].GetComponent<Chunk>().SetMesh();
             }
             else
             {
@@ -495,15 +497,16 @@ public class Generation : MonoBehaviour
 
 
             //set mesh <- main thread
-            SetMesh(chunk);
+            chunk.GetComponent<Chunk>().SetMesh();
             allChunks.Add(startingChunk, chunk);
         }
     }
 
     public void UpdateMesh(GameObject chunk, int points)
     {
+        chunk.GetComponent<Chunk>().updateVertexDensity(points);
         //Debug.Log("Updating mesh");
-            noiseShader.SetVector("startingValue", chunk.transform.position);
+/*            noiseShader.SetVector("startingValue", chunk.transform.position);
             marchingCubeShader.SetVector("startingValue", chunk.transform.position);
 
             //generate noise <- compute shader
@@ -512,32 +515,10 @@ public class Generation : MonoBehaviour
             triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(points), points);
 
             //set mesh <- main thread
-            SetMesh(chunk);
+            SetMesh(chunk);*/
     }
 
 
-    /// <summary>
-    /// Sets the mesh of given chunk, together with its triangles.
-    /// </summary>
-    /// <param name="chunk">The chunk which needs to be set. </param>
-    void SetMesh(GameObject chunk)
-    {
-        MeshRenderer meshRenderer = setupMeshRenderer(chunk);
-        MeshFilter meshFilter = setupMeshFilter(chunk);
-
-        Mesh mesh = new Mesh();
-        meshFilter.mesh = mesh;
-
-        mesh.vertices = createVertices();
-        mesh.triangles = createTriangles(createVertices().Length);
-
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        mesh.RecalculateTangents();
-
-
-        meshRenderer.material = terrainMaterial;
-    }
 
 
     /// <summary>
@@ -627,38 +608,10 @@ public class Generation : MonoBehaviour
 
 
     /// <summary>
-    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
-    /// </summary>
-    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
-    /// <returns></returns>
-    private MeshRenderer setupMeshRenderer(GameObject chunk)
-    {
-        if (chunk.GetComponent<MeshRenderer>() == null)
-        {
-            chunk.AddComponent<MeshRenderer>();
-        }
-        return chunk.GetComponent<MeshRenderer>();
-    }
-
-    /// <summary>
-    /// Sets up mesh filter of given gameobject. Either gets the mesh filter or creates one.
-    /// </summary>
-    /// <param name="chunk">Given gameobject which needs to contain a mesh filter.</param>
-    /// <returns></returns>
-    private MeshFilter setupMeshFilter(GameObject chunk)
-    {
-        if (chunk.GetComponent<MeshFilter>() == null)
-        {
-            chunk.AddComponent<MeshFilter>();
-        }
-        return chunk.GetComponent<MeshFilter>();
-    }
-
-    /// <summary>
     /// Creates a Vector3 array from a triangles array, so it can be used for a mesh.
     /// </summary>
     /// <returns>A vector3 array with vertex positions in correct order for triangles.</returns>
-    private Vector3[] createVertices()
+    public Vector3[] createVertices()
     {
         Vector3[] vertices = new Vector3[triangles.Length * 3];
         for (int i = 0; i < triangles.Length; i++)
@@ -675,7 +628,7 @@ public class Generation : MonoBehaviour
     /// </summary>
     /// <param name="amount">The amount of triangles are put into the mesh.</param>
     /// <returns>An int array going from 0 to the amount.</returns>
-    private int[] createTriangles(int amount)
+    public int[] createTriangles(int amount)
     {
         int[] newTriangles = new int[amount];
         for (int i = 0; i < newTriangles.Length; i++)
