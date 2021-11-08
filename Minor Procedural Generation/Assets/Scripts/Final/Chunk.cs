@@ -77,6 +77,40 @@ public class Chunk : MonoBehaviour
         meshRenderer.material = mat;
     }
 
+    public void updatePosition(Vector3 newPosition)
+    {
+        if (!generator.allChunks.ContainsKey(newPosition))
+        {
+            //generate a new chunk
+            generator.allChunks.Remove(this.gameObject.transform.position);
+
+            this.gameObject.name = "Chunk (" + newPosition.x + "," + newPosition.y + "," + newPosition.z + ")";
+
+            Vector3 chunkPosition = newPosition * (generator.pointsPerAxis - 1) * generator.size;
+            this.gameObject.transform.position = chunkPosition;
+            Perlin.noiseShader.SetVector("startingValue", chunkPosition);
+            MarchingCube.marchingCubeShader.SetVector("startingValue", chunkPosition);
+
+            //generate noise <- compute shader
+            //generate marching cubes <- compute shader
+            //Array.Clear(generator.triangles, 0, generator.triangles.Length);
+            if (generator.currentChunk == newPosition)
+            {
+                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(2), 2);
+            }
+            else
+            {
+                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+            }
+
+
+
+            //set mesh <- main thread
+            SetMesh();
+            generator.allChunks.Add(newPosition, this.gameObject);
+        }
+    }
+
 
     public void updateVertexDensity(int density)
     {

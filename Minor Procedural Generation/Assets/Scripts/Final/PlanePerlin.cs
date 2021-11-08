@@ -20,13 +20,112 @@ public static class  PlanePerlin
                 float sampleX = x / scale;
                 float sampleY = y / scale;
 
-                double perlinValue = noise(sampleX, sampleY);
-                noiseMap[x, y] = (float)perlinValue;
+                float perlinValue = selfmadeNoise(sampleX, sampleY);
+                noiseMap[x, y] = perlinValue;
             }
         }
 
         return noiseMap;
     }
+
+    public static float interpolate(float value)
+    {
+        return (6 * Mathf.Pow(value, 5) - 15 * Mathf.Pow(value, 4) + 10 * Mathf.Pow(value, 3));
+    }
+
+
+    public static float selfmadeNoise(float x, float y)
+    {
+        float result = 0;
+
+
+        Vector2 cornerA = new Vector2(Random.Range(-1f,1f), Random.Range(-1f, 1f));
+        Vector2 cornerB = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+        Vector2 cornerC = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+        Vector2 cornerD = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+
+
+        //points in the perlin space
+        float pointA = x - Mathf.Floor(x);
+        float pointB = y - Mathf.Floor(y);
+
+        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
+        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
+        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
+        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - 1, pointB - 1));
+
+        float somethingA = perlinA * ( 1 - interpolate(pointA)) + perlinB * interpolate(pointA);
+        float somethingB = perlinC * ( 1 - interpolate(pointA)) + perlinD * interpolate(pointA);
+
+        result = somethingA * (1 - interpolate(pointB)) + somethingB * interpolate(pointB);
+
+
+        return result;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     private static int[,] grad3 = {{1,1,0},{-1,1,0},{1,-1,0},{-1,-1,0},

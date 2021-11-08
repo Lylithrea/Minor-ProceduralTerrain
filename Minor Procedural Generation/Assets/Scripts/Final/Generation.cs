@@ -36,7 +36,7 @@ public class Generation : MonoBehaviour
     Vector3[] chunkVertexPositions;
 
     //Contains all the currently loaded chunks
-    private Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
+    public Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
     private List<Vector3> currentPlayerChunks = new List<Vector3>();
 
     public Material terrainMaterial;
@@ -171,7 +171,7 @@ public class Generation : MonoBehaviour
             if (reusableChunkQueue.Count > 0)
             {
                 GameObject chunk = reusableChunkQueue.Dequeue();
-                UpdateChunk(chunk, chunkPos);
+                chunk.GetComponent<Chunk>().updatePosition(chunkPos);
             }
             else
             {
@@ -205,7 +205,7 @@ public class Generation : MonoBehaviour
         while(updateQueue.Count > 0)
         {
             Chunks chunk = updateQueue.Dequeue();
-            UpdateMesh(chunk.chunk, chunk.points);
+            chunk.chunk.GetComponent<Chunk>().updateVertexDensity(chunk.points);
             yield return null;
         }
     }
@@ -450,75 +450,6 @@ public class Generation : MonoBehaviour
             allChunks.Add(startingChunk, chunk);
         }
     }
-
-
-    public void CheckLevelOfDetail(int levelOfDetail, Vector3 startingChunk)
-    {
-        if(levelOfDetail == 1)
-        {
-            if (currentChunk == startingChunk)
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
-                allChunks[startingChunk].GetComponent<Chunk>().SetMesh();
-            }
-            else
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
-            }
-        }
-    }
-
-    public void UpdateChunk(GameObject chunk, Vector3 startingChunk)
-    {
-        if (!allChunks.ContainsKey(startingChunk))
-        {
-            //generate a new chunk
-            //allChunks.Remove(chunk.transform.position);
-
-            chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
-
-            Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;
-            chunk.transform.position = chunkPosition;
-            noiseShader.SetVector("startingValue", chunkPosition);
-            marchingCubeShader.SetVector("startingValue", chunkPosition);
-
-            //generate noise <- compute shader
-            //generate marching cubes <- compute shader
-            Array.Clear(triangles, 0, triangles.Length);
-            if (currentChunk == startingChunk)
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
-            }
-            else
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
-            }
-
-
-
-            //set mesh <- main thread
-            chunk.GetComponent<Chunk>().SetMesh();
-            allChunks.Add(startingChunk, chunk);
-        }
-    }
-
-    public void UpdateMesh(GameObject chunk, int points)
-    {
-        chunk.GetComponent<Chunk>().updateVertexDensity(points);
-        //Debug.Log("Updating mesh");
-/*            noiseShader.SetVector("startingValue", chunk.transform.position);
-            marchingCubeShader.SetVector("startingValue", chunk.transform.position);
-
-            //generate noise <- compute shader
-            //generate marching cubes <- compute shader
-            //Array.Clear(triangles, 0, triangles.Length);
-            triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(points), points);
-
-            //set mesh <- main thread
-            SetMesh(chunk);*/
-    }
-
-
 
 
     /// <summary>
