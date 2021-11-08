@@ -7,61 +7,8 @@ using MarchCubes;
 using System.Threading;
 
 
-public class Generation : MonoBehaviour
+public class Generation : GenerationTooling
 {
-    public GameObject player;
-    private Vector3 currentPosition;
-
-    [Header("Noise Settings")]
-    public ComputeShader noiseShader;
-    //[Range(0.43f, 0.47f)]
-    public float scale;
-    public float groundLevelHeight = 250;
-    public float frequency = 25;
-
-    [Header("Generation Settings")]
-    public int radius;
-    public int groundLevel;
-    public int layerThickness;
-    public float cutoff;
-
-    [Header("Chunk Settings")]
-    public ComputeShader marchingCubeShader;
-    public int pointsPerAxis = 10;
-    public int size;
-    [Range(0,2)]
-    public int levelOfDetail;
-    public int levelOfDetailRadius;
-
-    Vector3[] chunkVertexPositions;
-
-    //Contains all the currently loaded chunks
-    public Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
-    private List<Vector3> currentPlayerChunks = new List<Vector3>();
-
-    public Material terrainMaterial;
-    public Vector3 currentChunk;
-
-    private Queue<Vector3> chunkQueue = new Queue<Vector3>();
-    private Queue<Vector3> destroyChunkQueue = new Queue<Vector3>();
-    private Queue<GameObject> reusableChunkQueue = new Queue<GameObject>();
-    private Queue<Chunks> updateQueue = new Queue<Chunks>();
-
-
-    public Triangle[] triangles = new Triangle[1];
-
-    //should be equal to computeshader numthreads
-    int numThreads = 8;
-    private bool spawningChunksRunning = false;
-    private bool destroyingChunksRunning = false;
-
-    public Texture groundTexture;
-
-    struct Chunks
-    {
-        public GameObject chunk;
-        public int points;
-    }
 
     void Start()
     {
@@ -73,27 +20,18 @@ public class Generation : MonoBehaviour
         //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
         setupValues();
 
-
-
         //spawn the chunks where we start.
         InitializeStartingChunks();
-
-        
     }
 
 
     private void Update()
     {
-        //SpawnChunksBasedOnPlayerMovement();
         testDynamicChunks();
-
-   /*     if (!destroyingChunksRunning)
-        {
-            checkDestroyingChunks();
-        }*/
     }
 
     Vector3 playerPos = new Vector3(0,0,0);
+    //check movement of player to spawn new chunks
     private void testDynamicChunks()
     {
         playerPos.x = Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size));
@@ -102,11 +40,13 @@ public class Generation : MonoBehaviour
         //so it does not update every update loop
         if (playerPos != currentChunk)
         {
+            //still need to add updating of the vertex density
             currentChunk = playerPos;
             UpdateChunks();
         }
     }
 
+    //update the chunks based on player position
     private void UpdateChunks()
     {
         int minX = (int)currentChunk.x - radius + 1;
@@ -135,30 +75,9 @@ public class Generation : MonoBehaviour
                 }
             }
         }
-
-
         if (!spawningChunksRunning)
         {
             StartCoroutine(SpawnChunks());
-        }
-
-
-
-    }
-
-    void checkDestroyingChunks()
-    {
-        destroyChunkQueue.Clear();
-        foreach (KeyValuePair<Vector3, GameObject> chunk in allChunks)
-        {
-            if (!currentPlayerChunks.Contains(chunk.Key))
-            {
-                destroyChunkQueue.Enqueue(chunk.Key);
-            }
-        }
-        if (!destroyingChunksRunning)
-        {
-            StartCoroutine(DestroyChunks());
         }
     }
 
@@ -180,133 +99,12 @@ public class Generation : MonoBehaviour
             yield return null;
         }
         StartCoroutine(UpdateChunkMeshes());
-        //checkDestroyingChunks();
-/*        if (!destroyingChunksRunning) {
-            StartCoroutine(DestroyChunks());
-        }*/
         spawningChunksRunning = false;
     }
 
-    IEnumerator DestroyChunks()
-    {
-        destroyingChunksRunning = true;
-        while (destroyChunkQueue.Count > 0)
-        {
-            Vector3 chunkPos = destroyChunkQueue.Dequeue();
-            DestroyChunk(chunkPos);
-            yield return null;
-        }
-
-        destroyingChunksRunning = false;
-    }
-
-    IEnumerator UpdateChunkMeshes()
-    {
-        while(updateQueue.Count > 0)
-        {
-            Chunks chunk = updateQueue.Dequeue();
-            chunk.chunk.GetComponent<Chunk>().updateVertexDensity(chunk.points);
-            yield return null;
-        }
-    }
 
 
-
-    private void SpawnChunksBasedOnPlayerMovement()
-    {
-        //check if players position has changed
-        //check if the new chunks already exist
-        //generate/destroy chunks based on position
-
-        if (Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size)) > currentChunk.x )
-        {
-            currentChunk.x += 1;
-            Vector3 startPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
-            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.x = currentChunk.x - radius ;
-            endPos.x = currentChunk.x - radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x - levelOfDetailRadius, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius + 1);
-            endPos = new Vector3(currentChunk.x - levelOfDetailRadius, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius - 1);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-        if (Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size)) < currentChunk.x)
-        {
-            currentChunk.x -= 1;
-            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
-            Vector3 endPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.x = currentChunk.x + radius;
-            endPos.x = currentChunk.x + radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x + levelOfDetailRadius, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius + 1);
-            endPos = new Vector3(currentChunk.x + levelOfDetailRadius, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius - 1);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-
-
-        if (Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size)) > currentChunk.y)
-        {
-            currentChunk.y += 1;
-            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y + radius - 1, currentChunk.z - radius + 1);
-            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.y = currentChunk.y - radius;
-            endPos.y = currentChunk.y - radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius, currentChunk.z - levelOfDetailRadius + 1);
-            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y - levelOfDetailRadius, currentChunk.z + levelOfDetailRadius - 1);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-        if (Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size)) < currentChunk.y)
-        {
-            currentChunk.y -= 1;
-            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
-            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y - radius + 1, currentChunk.z + radius - 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.y = currentChunk.y + radius;
-            endPos.y = currentChunk.y + radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y + levelOfDetailRadius, currentChunk.z - levelOfDetailRadius + 1);
-            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius, currentChunk.z + levelOfDetailRadius - 1);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-
-        if (Mathf.Floor(player.transform.position.z / ((pointsPerAxis - 1) * size)) > currentChunk.z)
-        {
-            currentChunk.z += 1;
-            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z + radius - 1);
-            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z + radius - 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.z = currentChunk.z - radius;
-            endPos.z = currentChunk.z - radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z - levelOfDetailRadius);
-            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z - levelOfDetailRadius);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-
-
-        if (Mathf.Floor(player.transform.position.z / ((pointsPerAxis - 1) * size)) < currentChunk.z)
-        {
-            currentChunk.z -= 1;
-            Vector3 startPos = new Vector3(currentChunk.x - radius + 1, currentChunk.y - radius + 1, currentChunk.z - radius + 1);
-            Vector3 endPos = new Vector3(currentChunk.x + radius - 1, currentChunk.y + radius - 1, currentChunk.z - radius + 1);
-            CreateMultipleChunks(startPos, endPos);
-            startPos.z = currentChunk.z + radius;
-            endPos.z = currentChunk.z + radius;
-            DestroyMultipleChunks(startPos, endPos);
-            startPos = new Vector3(currentChunk.x - levelOfDetailRadius + 1, currentChunk.y - levelOfDetailRadius + 1, currentChunk.z + levelOfDetailRadius);
-            endPos = new Vector3(currentChunk.x + levelOfDetailRadius - 1, currentChunk.y + levelOfDetailRadius - 1, currentChunk.z + levelOfDetailRadius);
-            UpdateMultipleMeshes(startPos, endPos);
-        }
-
-
-    }
-
-
-    public void UpdateMultipleMeshes(Vector3 startPos, Vector3 endPos)
+    public void UpdateMultipleMeshes(Vector3 startPos, Vector3 endPos, int detail)
     {
         for (float i = startPos.x; i <= endPos.x; i++)
         {
@@ -316,7 +114,7 @@ public class Generation : MonoBehaviour
                 {
                     Chunks newchunk;
                     newchunk.chunk = allChunks[new Vector3(i, j, k)];
-                    newchunk.points = levelOfDetail + 1;
+                    newchunk.points = detail;
                     updateQueue.Enqueue(newchunk);
                     //UpdateMesh(allChunks[new Vector3(i,j,k)], 1);
                 }
@@ -452,35 +250,6 @@ public class Generation : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Sets all constant values for the chunk
-    /// </summary>
-    private void setupValues()
-    {
-        noiseShader.SetFloat("chunkSize", pointsPerAxis * pointsPerAxis * pointsPerAxis);
-        noiseShader.SetFloat("size", size);
-        noiseShader.SetFloat("noiseScale", scale);
-        noiseShader.SetFloat("repeat", 9);
-        noiseShader.SetInt("pointsPerAxis", pointsPerAxis);
-
-        marchingCubeShader.SetInt("pointsPerAxis", pointsPerAxis);
-        marchingCubeShader.SetFloat("cutoff", cutoff);
-        marchingCubeShader.SetFloat("groundLevel", groundLevel);
-        marchingCubeShader.SetFloat("layerThickness", layerThickness);
-        marchingCubeShader.SetTexture(0, "groundTex", groundTexture);
-        marchingCubeShader.SetFloat("height", groundLevelHeight);
-        marchingCubeShader.SetFloat("frequency", frequency);
-
-        Perlin.noiseShader = noiseShader;
-        Perlin.pointsPerAxis = pointsPerAxis;
-        Perlin.numThreads = numThreads;
-        Perlin.size = size;
-
-        MarchingCube.pointsPerAxis = pointsPerAxis;
-        MarchingCube.numThreads = numThreads;
-        MarchingCube.marchingCubeShader = marchingCubeShader;
-
-    }
 
     /// <summary>
     /// Generates the starting chunks when starting the world
@@ -516,68 +285,27 @@ public class Generation : MonoBehaviour
 
     }
 
-    /// <summary>
-    /// Calculates all vertex points within a chunk at the start, since every vertex position is the same within chunk.
-    /// </summary>
-    private void GainChunkPositions()
+    IEnumerator DestroyChunks()
     {
-        //sets all the chunk positions since its always the same in each chunk
-        int chunkSize = pointsPerAxis * pointsPerAxis * pointsPerAxis;
-
-        chunkVertexPositions = new Vector3[chunkSize];
-        for (int i = 0; i < chunkSize; i++) //triple foreach loop condensed into 1 for loop
+        destroyingChunksRunning = true;
+        while (destroyChunkQueue.Count > 0)
         {
-            float r = i % pointsPerAxis;
-            float h = Mathf.FloorToInt((i / pointsPerAxis) % pointsPerAxis);
-            float c = Mathf.FloorToInt(i / (pointsPerAxis * pointsPerAxis));
-            chunkVertexPositions[i] = new Vector3(r * size, h * size, c * size);
+            Vector3 chunkPos = destroyChunkQueue.Dequeue();
+            DestroyChunk(chunkPos);
+            yield return null;
         }
-
+        destroyingChunksRunning = false;
     }
 
-
-
-
-    /// <summary>
-    /// Creates a Vector3 array from a triangles array, so it can be used for a mesh.
-    /// </summary>
-    /// <returns>A vector3 array with vertex positions in correct order for triangles.</returns>
-    public Vector3[] createVertices()
+    IEnumerator UpdateChunkMeshes()
     {
-        Vector3[] vertices = new Vector3[triangles.Length * 3];
-        for (int i = 0; i < triangles.Length; i++)
+        while (updateQueue.Count > 0)
         {
-            vertices[i * 3 + 0] = triangles[i].VertexA;
-            vertices[i * 3 + 1] = triangles[i].VertexB;
-            vertices[i * 3 + 2] = triangles[i].VertexC;
+            Chunks chunk = updateQueue.Dequeue();
+            chunk.chunk.GetComponent<Chunk>().updateVertexDensity(chunk.points);
+            yield return null;
         }
-        return vertices;
     }
-
-    /// <summary>
-    /// Generates a int array going from 0 to triangle amount. This list is orderer since all vertices are already in correct order in the triangle array.
-    /// </summary>
-    /// <param name="amount">The amount of triangles are put into the mesh.</param>
-    /// <returns>An int array going from 0 to the amount.</returns>
-    public int[] createTriangles(int amount)
-    {
-        int[] newTriangles = new int[amount];
-        for (int i = 0; i < newTriangles.Length; i++)
-        {
-            newTriangles[i] = i;
-        }
-        return newTriangles;
-    }
-
-    /// <summary>
-    /// Struct for the triangles, since compute shaders run a synchronious we need to give back a list of triangles based of 3 positions.
-    /// </summary>
-    public struct Triangle
-    {
-        public Vector3 VertexA;
-        public Vector3 VertexB;
-        public Vector3 VertexC;
-    };
 
 
 }
