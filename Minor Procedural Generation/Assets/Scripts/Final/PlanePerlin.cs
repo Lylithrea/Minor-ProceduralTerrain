@@ -44,10 +44,18 @@ public static class  PlanePerlin
         Vector2 cornerC = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
         Vector2 cornerD = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
 
+/*        Vector2 cornerA = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+        Vector2 cornerB = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+        Vector2 cornerC = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+        Vector2 cornerD = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));*/
 
-        //points in the perlin space
+
+       //points in the perlin space
         float pointA = x - Mathf.Floor(x);
         float pointB = y - Mathf.Floor(y);
+
+        //float pointA = x;
+        //float pointB = y;
 
         float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
         float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));

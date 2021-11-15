@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0.63879496, g: 0.7389908, b: 0.8207547, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.004
@@ -677,7 +677,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapWidth: 500
   mapHeight: 500
-  noiseScale: 292
+  noiseScale: 2
   autoUpdate: 1
   texture: {fileID: 2800000, guid: 5e57214a9c050584f85a481e09a17a13, type: 3}
   mat: {fileID: 2100000, guid: 2e21dbb8166b6b04ba2563fba5a69bb3, type: 2}
@@ -977,7 +977,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &820136375
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1807,11 +1807,14 @@ MonoBehaviour:
   cutoff: 0.67
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 8
+  size: 4
   levelOfDetail: 1
   levelOfDetailRadius: 2
+  currentPlayerChunks: []
   terrainMaterial: {fileID: 2100000, guid: a080dd9923875904eb1e2420ffc946f7, type: 2}
   currentChunk: {x: 0, y: 0, z: 0}
+  spawningChunksRunning: 0
+  destroyingChunksRunning: 0
   groundTexture: {fileID: 2800000, guid: 5e57214a9c050584f85a481e09a17a13, type: 3}
 --- !u!4 &1789553037
 Transform:
