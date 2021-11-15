@@ -17,10 +17,10 @@ public static class  PlanePerlin
         {
             for(int x = 0; x < mapWidth; x++)
             {
-                float sampleX = x / scale;
-                float sampleY = y / scale;
+                float sampleX = x;
+                float sampleY = y;
 
-                float perlinValue = selfmadeNoise(sampleX, sampleY);
+                float perlinValue = selfmadeNoise(sampleX, sampleY, scale);
                 noiseMap[x, y] = perlinValue;
             }
         }
@@ -34,7 +34,7 @@ public static class  PlanePerlin
     }
 
 
-    public static float selfmadeNoise(float x, float y)
+    public static float selfmadeNoise(float x, float y, float scale)
     {
         float result = 0;
 
@@ -43,6 +43,11 @@ public static class  PlanePerlin
         Vector2 cornerB = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
         Vector2 cornerC = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
         Vector2 cornerD = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+/*        
+        Vector2 cornerA = new Vector2(0.6f, -0.2f);
+        Vector2 cornerB = new Vector2(0.2f, 0.8f);
+        Vector2 cornerC = new Vector2(0.2f, 0.8f);
+        Vector2 cornerD = new Vector2(0.5f,0.5f);*/
 
 /*        Vector2 cornerA = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
         Vector2 cornerB = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
@@ -51,7 +56,9 @@ public static class  PlanePerlin
 
 
        //points in the perlin space
+       //u
         float pointA = x - Mathf.Floor(x);
+        //v
         float pointB = y - Mathf.Floor(y);
 
         //float pointA = x;
@@ -62,8 +69,14 @@ public static class  PlanePerlin
         float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
         float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - 1, pointB - 1));
 
-        float somethingA = perlinA * ( 1 - interpolate(pointA)) + perlinB * interpolate(pointA);
-        float somethingB = perlinC * ( 1 - interpolate(pointA)) + perlinD * interpolate(pointA);
+/*        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
+        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
+        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
+        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - scale, pointB - 1));*/
+
+
+        float somethingA = perlinA * (1 - interpolate(pointA)) + perlinB * interpolate(pointA);
+        float somethingB = perlinC * (1 - interpolate(pointA)) + perlinD * interpolate(pointA);
 
         result = somethingA * (1 - interpolate(pointB)) + somethingB * interpolate(pointB);
 

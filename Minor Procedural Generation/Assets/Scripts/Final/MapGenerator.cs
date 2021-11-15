@@ -26,6 +26,9 @@ public class MapGenerator : MonoBehaviour
 
         //display.SetTexture((Texture2D)mat.GetTexture("surface"));
 
+        float result = PlanePerlin.selfmadeNoise(0.6f, 0.8f, 1);
+        Debug.Log("Final result : " + result + " !");
+
     }
 
 

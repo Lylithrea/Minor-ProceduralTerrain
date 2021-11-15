@@ -675,9 +675,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c612a5d649424c74dbbac55f311a8424, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapWidth: 500
-  mapHeight: 500
-  noiseScale: 2
+  mapWidth: 25
+  mapHeight: 25
+  noiseScale: 2.44
   autoUpdate: 1
   texture: {fileID: 2800000, guid: 5e57214a9c050584f85a481e09a17a13, type: 3}
   mat: {fileID: 2100000, guid: 2e21dbb8166b6b04ba2563fba5a69bb3, type: 2}
@@ -1050,7 +1050,7 @@ Transform:
   m_GameObject: {fileID: 820136374}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 26, y: 0, z: 0}
-  m_LocalScale: {x: 500, y: 1, z: 500}
+  m_LocalScale: {x: 25, y: 1, z: 25}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 14
