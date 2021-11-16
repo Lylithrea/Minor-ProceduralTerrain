@@ -11,7 +11,7 @@ public class MapDisplay : MonoBehaviour
         int width = noiseMap.GetLength(0);
         int height = noiseMap.GetLength(1);
 
-        Debug.Log("Map height: " + height + " Map width: " + width);
+        //Debug.Log("Map height: " + height + " Map width: " + width);
 
 
         Texture2D texture = new Texture2D(width, height);
@@ -22,7 +22,7 @@ public class MapDisplay : MonoBehaviour
             for(int x = 0; x < width; x++)
             {
                 colourMap[y * width + x] = Color.Lerp(Color.black, Color.white, (noiseMap[x, y] + 1)/2);
-                Debug.Log("On point (" + x + "," + y + " has the value of : " + noiseMap[x, y]);
+                //Debug.Log("On point (" + x + "," + y + " has the value of : " + noiseMap[x, y]);
             }
         }
 

@@ -4,6 +4,31 @@ using UnityEngine;
 
 public static class  PlanePerlin
 {
+    private static readonly int[] permutation = { 151,160,137,91,90,15,                 // Hash lookup table as defined by Ken Perlin.  This is a randomly
+    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,    // arranged array of all numbers from 0-255 inclusive.
+    190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+    88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+    77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+    102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+    135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+    5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+    223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+    129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+    251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+    49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+    138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+    };
+    private static readonly int[] px;                                                    // Doubled permutation to avoid overflow
+
+    static PlanePerlin()
+    {
+        px = new int[512];
+        for (int x = 0; x < 512; x++)
+        {
+            px[x] = permutation[x % 256];
+        }
+    }
+
     public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, float scale)
     {
         float[,] noiseMap = new float[mapWidth, mapHeight];
@@ -17,8 +42,8 @@ public static class  PlanePerlin
         {
             for(int x = 0; x < mapWidth; x++)
             {
-                float sampleX = x;
-                float sampleY = y;
+                float sampleX = x/scale;
+                float sampleY = y/scale;
 
                 float perlinValue = selfmadeNoise(sampleX, sampleY, scale);
                 noiseMap[x, y] = perlinValue;
@@ -33,6 +58,25 @@ public static class  PlanePerlin
         return (6 * Mathf.Pow(value, 5) - 15 * Mathf.Pow(value, 4) + 10 * Mathf.Pow(value, 3));
     }
 
+    public static float grad(int hash, float x, float y)
+    {
+        int h = hash & 15;                                    // Take the hashed value and take the first 4 bits of it (15 == 0b1111)
+        float u = h < 4 /* 0b1000 */ ? x : y;                // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
+
+        float v;                                             // In Ken Perlin's original implementation this was another conditional operator (?:).  I
+                                                              // expanded it for readability.
+
+        if (h < 4 /* 0b0100 */)                                // If the first and second significant bits are 0 set v = y
+            v = y;
+        else
+            v = x;
+
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+    }
+    public static double lerp(double a, double b, double x)
+    {
+        return a + x * (b - a);
+    }
 
     public static float selfmadeNoise(float x, float y, float scale)
     {
@@ -43,36 +87,65 @@ public static class  PlanePerlin
         Vector2 cornerB = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
         Vector2 cornerC = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
         Vector2 cornerD = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
-/*        
-        Vector2 cornerA = new Vector2(0.6f, -0.2f);
-        Vector2 cornerB = new Vector2(0.2f, 0.8f);
-        Vector2 cornerC = new Vector2(0.2f, 0.8f);
-        Vector2 cornerD = new Vector2(0.5f,0.5f);*/
+        /*        
+                Vector2 cornerA = new Vector2(0.6f, -0.2f);
+                Vector2 cornerB = new Vector2(0.2f, 0.8f);
+                Vector2 cornerC = new Vector2(0.2f, 0.8f);
+                Vector2 cornerD = new Vector2(0.5f,0.5f);*/
 
-/*        Vector2 cornerA = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-        Vector2 cornerB = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-        Vector2 cornerC = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-        Vector2 cornerD = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));*/
+        /*        Vector2 cornerA = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+                Vector2 cornerB = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+                Vector2 cornerC = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
+                Vector2 cornerD = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));*/
 
 
-       //points in the perlin space
-       //u
+        //points in the perlin space
+        //u
         float pointA = x - Mathf.Floor(x);
         //v
         float pointB = y - Mathf.Floor(y);
 
+        int xi = (int)x & 255;                              // Calculate the "unit cube" that the point asked will be located in
+        int yi = (int)y & 255;
+
+        int testA = px[px[xi] + yi];
+        int testB = px[px[xi + 1] + yi];
+        int testC = px[px[xi] + yi + 1];
+        int testD = px[px[xi + 1] + yi + 1];
+
+        float testAh = grad(testA, pointA, pointB);
+        float testBh = grad(testB, pointA-1, pointB);
+        float testCh = grad(testC,pointA, pointB-1);
+        float testDh = grad(testD, pointA-1, pointB-1);
+
+        //Debug.Log("Point A: " + pointA + " Point B: " + pointB);
+        //Debug.Log("Point A: " + pointA + " Point B: " + pointB);
+        //Debug.Log("Test A: " + testA);
+        //Debug.Log("Test A h: " + testAh);
+
+               double resultA = lerp(testAh, testBh, interpolate(pointA));
+                double resultB = lerp(testCh, testDh, interpolate(pointA));
+
+                float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
+/*
+        float resultA = testAh * (1 - interpolate(pointA)) + testBh * interpolate(pointA);
+        float resultB = testCh * (1 - interpolate(pointA)) + testDh * interpolate(pointA);
+
+        float endResult = resultA * (1 - interpolate(pointB)) + resultB * interpolate(pointB);
+*/
+        return endResult;
         //float pointA = x;
         //float pointB = y;
-
-        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
-        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
-        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
-        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - 1, pointB - 1));
 
 /*        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
         float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
         float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
-        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - scale, pointB - 1));*/
+        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - 1, pointB - 1));
+
+*//*        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
+        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
+        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
+        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - scale, pointB - 1));*//*
 
 
         float somethingA = perlinA * (1 - interpolate(pointA)) + perlinB * interpolate(pointA);
@@ -81,7 +154,7 @@ public static class  PlanePerlin
         result = somethingA * (1 - interpolate(pointB)) + somethingB * interpolate(pointB);
 
 
-        return result;
+        return result;*/
     }
 
 
