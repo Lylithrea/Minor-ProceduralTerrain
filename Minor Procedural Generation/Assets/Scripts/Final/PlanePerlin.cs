@@ -80,81 +80,34 @@ public static class  PlanePerlin
 
     public static float selfmadeNoise(float x, float y, float scale)
     {
-        float result = 0;
-
-
-        Vector2 cornerA = new Vector2(Random.Range(-1f,1f), Random.Range(-1f, 1f));
-        Vector2 cornerB = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
-        Vector2 cornerC = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
-        Vector2 cornerD = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
-        /*        
-                Vector2 cornerA = new Vector2(0.6f, -0.2f);
-                Vector2 cornerB = new Vector2(0.2f, 0.8f);
-                Vector2 cornerC = new Vector2(0.2f, 0.8f);
-                Vector2 cornerD = new Vector2(0.5f,0.5f);*/
-
-        /*        Vector2 cornerA = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-                Vector2 cornerB = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-                Vector2 cornerC = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));
-                Vector2 cornerD = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f));*/
-
-
         //points in the perlin space
-        //u
         float pointA = x - Mathf.Floor(x);
-        //v
         float pointB = y - Mathf.Floor(y);
 
-        int xi = (int)x & 255;                              // Calculate the "unit cube" that the point asked will be located in
+        // Calculate the "unit cube" that the point asked will be located in
+        int xi = (int)x & 255;                             
         int yi = (int)y & 255;
 
+        //get a semi-random number from a table for 255 included numbers
         int testA = px[px[xi] + yi];
         int testB = px[px[xi + 1] + yi];
         int testC = px[px[xi] + yi + 1];
         int testD = px[px[xi + 1] + yi + 1];
 
+        //based on those random numbers generate a direction, in this case from 4 different directions
         float testAh = grad(testA, pointA, pointB);
         float testBh = grad(testB, pointA-1, pointB);
         float testCh = grad(testC,pointA, pointB-1);
         float testDh = grad(testD, pointA-1, pointB-1);
 
-        //Debug.Log("Point A: " + pointA + " Point B: " + pointB);
-        //Debug.Log("Point A: " + pointA + " Point B: " + pointB);
-        //Debug.Log("Test A: " + testA);
-        //Debug.Log("Test A h: " + testAh);
+        //Combine the directions together, 2 at the time, first on the X axis
+        double resultA = lerp(testAh, testBh, interpolate(pointA));
+        double resultB = lerp(testCh, testDh, interpolate(pointA));
 
-               double resultA = lerp(testAh, testBh, interpolate(pointA));
-                double resultB = lerp(testCh, testDh, interpolate(pointA));
+        //then combine those 2 values together on the y axis
+        float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
 
-                float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
-/*
-        float resultA = testAh * (1 - interpolate(pointA)) + testBh * interpolate(pointA);
-        float resultB = testCh * (1 - interpolate(pointA)) + testDh * interpolate(pointA);
-
-        float endResult = resultA * (1 - interpolate(pointB)) + resultB * interpolate(pointB);
-*/
         return endResult;
-        //float pointA = x;
-        //float pointB = y;
-
-/*        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
-        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
-        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
-        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - 1, pointB - 1));
-
-*//*        float perlinA = Vector2.Dot(cornerA, new Vector2(pointA, pointB));
-        float perlinB = Vector2.Dot(cornerB, new Vector2(pointA - 1, pointB));
-        float perlinC = Vector2.Dot(cornerC, new Vector2(pointA, pointB - 1));
-        float perlinD = Vector2.Dot(cornerD, new Vector2(pointA - scale, pointB - 1));*//*
-
-
-        float somethingA = perlinA * (1 - interpolate(pointA)) + perlinB * interpolate(pointA);
-        float somethingB = perlinC * (1 - interpolate(pointA)) + perlinD * interpolate(pointA);
-
-        result = somethingA * (1 - interpolate(pointB)) + somethingB * interpolate(pointB);
-
-
-        return result;*/
     }
 
 
