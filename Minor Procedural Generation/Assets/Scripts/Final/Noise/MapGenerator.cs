@@ -8,6 +8,7 @@ public class MapGenerator : MonoBehaviour
     public int mapWidth;
     public int mapHeight;
     public float noiseScale;
+    public int seed;
     public bool autoUpdate = false;
 
     public Texture2D texture;
@@ -15,20 +16,10 @@ public class MapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        float[,] noiseMap = PlanePerlin.GenerateNoiseMap(mapWidth, mapHeight, noiseScale);
-
-        //float[,] map = texture.GetPixels();
+        float[,] noiseMap = PlanePerlin.GenerateNoiseMap(mapWidth, mapHeight, noiseScale,seed);
 
         MapDisplay display = FindObjectOfType<MapDisplay>();
         display.DrawNoiseMap(noiseMap);
-        //Texture mainTex = mat.mainTexture;
-        //Texture2D newTex = new Texture2D(mainTex.width, mainTex.height);
-
-        //display.SetTexture((Texture2D)mat.GetTexture("surface"));
-
-        float result = PlanePerlin.selfmadeNoise(0.6f, 0.8f, 1);
-        Debug.Log("Final result : " + result + " !");
-
     }
 
 

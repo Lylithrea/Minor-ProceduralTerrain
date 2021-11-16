@@ -29,7 +29,7 @@ public static class  PlanePerlin
         }
     }
 
-    public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, float scale)
+    public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, float scale, int seed)
     {
         float[,] noiseMap = new float[mapWidth, mapHeight];
 
@@ -45,7 +45,7 @@ public static class  PlanePerlin
                 float sampleX = x/scale;
                 float sampleY = y/scale;
 
-                float perlinValue = selfmadeNoise(sampleX, sampleY, scale);
+                float perlinValue = selfmadeNoise(sampleX + seed, sampleY + seed, scale);
                 noiseMap[x, y] = perlinValue;
             }
         }
@@ -60,19 +60,16 @@ public static class  PlanePerlin
 
     public static float grad(int hash, float x, float y)
     {
-        int h = hash & 15;                                    // Take the hashed value and take the first 4 bits of it (15 == 0b1111)
-        float u = h < 4 /* 0b1000 */ ? x : y;                // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
-
-        float v;                                             // In Ken Perlin's original implementation this was another conditional operator (?:).  I
-                                                              // expanded it for readability.
-
-        if (h < 4 /* 0b0100 */)                                // If the first and second significant bits are 0 set v = y
-            v = y;
-        else
-            v = x;
-
-        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+        switch (hash & 0x3)
+        {
+            case 0x0: return x + y;
+            case 0x1: return -x + y;
+            case 0x2: return x - y;
+            case 0x3: return -x - y;
+            default: return 0;
+        }
     }
+
     public static double lerp(double a, double b, double x)
     {
         return a + x * (b - a);
