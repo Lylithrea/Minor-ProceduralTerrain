@@ -32,13 +32,13 @@ public class CubePerlin : MonoBehaviour
             {
                 for (int z = 0; z < mapLenght; z++)
                 {
-                    perlinPoints.Add(new Vector3(x, y, z), selfmadeCubeNoise(x/noiseScale + seed, y/noiseScale + seed, z/noiseScale + seed));
+                    perlinPoints.Add(new Vector3(x, y, z), selfmadeCubeNoise(x/noiseScale, y/noiseScale, z/noiseScale));
                 }
             }
         }
     }
 
-    public static float grad(int hash, float x, float y, float z)
+    public static double grad(int hash, double x, double y, double z)
     {
         //bit wise and
         switch (hash & 0xF)
@@ -65,7 +65,8 @@ public class CubePerlin : MonoBehaviour
 
     public static float interpolate(float value)
     {
-        return (6 * Mathf.Pow(value, 5) - 15 * Mathf.Pow(value, 4) + 10 * Mathf.Pow(value, 3));
+        return value * value * value * (value * (value * 6 - 15) + 10);
+        //return (6 * Mathf.Pow(value, 5) - 15 * Mathf.Pow(value, 4) + 10 * Mathf.Pow(value, 3));
     }
 
     public static double lerp(double a, double b, double x)
@@ -81,6 +82,7 @@ public class CubePerlin : MonoBehaviour
         float pointX = x - Mathf.Floor(x);
         float pointY = y - Mathf.Floor(y);
         float pointZ = z - Mathf.Floor(z);
+
 
         // Calculate the "unit cube" that the point asked will be located in
         int xi = (int)x & 255;
@@ -100,29 +102,36 @@ public class CubePerlin : MonoBehaviour
         int cornerH = px[px[px[xi + 1] + yi + 1] + zi + 1];
 
         //based on those numbers we get a direction, in this case 8 different directions are possible
-        float cornerAdir = grad(cornerA, pointX, pointY, pointZ);
-        float cornerBdir = grad(cornerB, pointX, pointY, pointZ);
-        float cornerCdir = grad(cornerC, pointX, pointY, pointZ);
-        float cornerDdir = grad(cornerD, pointX, pointY, pointZ);
+        double cornerAdir = grad(cornerA, pointX, pointY, pointZ);
+        double cornerBdir = grad(cornerB, pointX, pointY -1, pointZ);
+        double cornerCdir = grad(cornerC, pointX, pointY, pointZ -1 );
+        double cornerDdir = grad(cornerD, pointX, pointY -1, pointZ -1);
 
-        float cornerEdir = grad(cornerE, pointX, pointY, pointZ);
-        float cornerFdir = grad(cornerF, pointX, pointY, pointZ);
-        float cornerGdir = grad(cornerG, pointX, pointY, pointZ);
-        float cornerHdir = grad(cornerH, pointX, pointY, pointZ);
+        double cornerEdir = grad(cornerE, pointX - 1, pointY, pointZ);
+        double cornerFdir = grad(cornerF, pointX - 1, pointY -1, pointZ);
+        double cornerGdir = grad(cornerG, pointX - 1, pointY, pointZ -1);
+        double cornerHdir = grad(cornerH, pointX - 1, pointY -1, pointZ -1 );
 
+        //Debug.Log("For cornerA we get : X: " + pointX + " Y: " + pointY + " Z: " + pointZ + ", which results in : " + cornerAdir);
+        
         //combine the directions we got, 2 at the time, first on the x, then on y, then on z
         //x:
-        double resultA = lerp(cornerAdir, cornerBdir, interpolate(pointX));
-        double resultB = lerp(cornerCdir, cornerDdir, interpolate(pointX));
-        double resultC = lerp(cornerEdir, cornerFdir, interpolate(pointX));
-        double resultD = lerp(cornerGdir, cornerHdir, interpolate(pointX));
+        double resultA = lerp(cornerAdir, cornerEdir, interpolate(pointX));
+        double resultB = lerp(cornerBdir, cornerFdir, interpolate(pointX));
+        double resultC = lerp(cornerCdir, cornerGdir, interpolate(pointX));
+        double resultD = lerp(cornerDdir, cornerHdir, interpolate(pointX));
 
         double resultE = lerp(resultA, resultB, interpolate(pointY));
         double resultF = lerp(resultC, resultD, interpolate(pointY));
 
         double resultG = lerp(resultE, resultF, interpolate(pointZ));
 
-        result = (float)resultG;
+
+        result = ((((float)resultG + 1) / 2) - 0.25f) * 2;
+        //Debug.Log("Result : " + result);
+        //Debug.Log("Result : " + result);
+
+        //result = (float)resultG;
 
         return result;
     }
@@ -173,13 +182,13 @@ public class CubePerlin : MonoBehaviour
             {
                 if (((pair.Value + 1) / 2) > cutOffValue)
                 {
-                    Gizmos.color = Color.Lerp(Color.black, Color.white, (pair.Value + 1) / 2);
+                    Gizmos.color = Color.Lerp(Color.black, Color.white, pair.Value);
                     Gizmos.DrawSphere(pair.Key, 0.25f);
                 }
             }
             else
             {
-                Gizmos.color = Color.Lerp(Color.black, Color.white, (pair.Value + 1) / 2);
+                Gizmos.color = Color.Lerp(Color.black, Color.white,pair.Value);
                 Gizmos.DrawSphere(pair.Key, 0.25f);
             }
         }
@@ -201,7 +210,7 @@ public class CubePerlin : MonoBehaviour
     49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
     138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
     };
-    private static readonly int[] px;                                                    // Doubled permutation to avoid overflow
+    public static readonly int[] px;                                                    // Doubled permutation to avoid overflow
 
     static CubePerlin()
     {

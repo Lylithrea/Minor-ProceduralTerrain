@@ -1382,10 +1382,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1150b68f08695b48b51910b717ebc39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapWidth: 5
-  mapHeight: 5
-  mapLenght: 5
-  noiseScale: 4.93
+  mapWidth: 15
+  mapHeight: 15
+  mapLenght: 15
+  noiseScale: 5.04
   seed: 0
   autoUpdate: 0
   cutOffValue: 0
@@ -1617,13 +1617,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1687258581}
-  m_LocalRotation: {x: -0.022957042, y: 0.97606146, z: -0.17338957, w: -0.12927918}
-  m_LocalPosition: {x: 131, y: 133.55, z: 177}
+  m_LocalRotation: {x: 0.16142306, y: 0.37908885, z: -0.067334265, w: 0.9086806}
+  m_LocalPosition: {x: 131, y: 375, z: 177}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 20.146, y: 195.09, z: 0.001}
+  m_LocalEulerAnglesHint: {x: 20.146, y: 45.291, z: 0.001}
 --- !u!114 &1687258586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1850,16 +1850,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1687258581}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
-  scale: 6.73
-  groundLevelHeight: 350
-  frequency: 20
+  scale: 36.62
+  groundLevelHeight: 82.47
+  frequency: 5.26
   radius: 4
   groundLevel: 350
-  layerThickness: 15
-  cutoff: 0.67
+  layerThickness: 1
+  cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 4
+  size: 2
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []

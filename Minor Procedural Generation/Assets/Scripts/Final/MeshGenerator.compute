@@ -41,6 +41,9 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
         float test = groundTex[vec / frequency % w];
         test *= height;
         
+        //test = 0;
+        
+        
         if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + test)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - test) / layerThickness)) > cutoff)
         {
             configurationNumber += pow(2, (i));

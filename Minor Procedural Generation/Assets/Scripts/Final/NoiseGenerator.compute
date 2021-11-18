@@ -29,6 +29,71 @@ int inc(float num)
     return num;
 }
 
+
+float interpolate(float value)
+{
+    return value * value * value * (value * (value * 6 - 15) + 10);
+}
+
+
+float selfmadeperlin(float x, float y, float z)
+{
+
+
+    int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
+    int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
+    int zi = (int) z & 255; // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
+    
+    float pointX = x - floor(x);
+    float pointY = y - floor(y);
+    float pointZ = z - floor(z);
+
+    
+    
+    float interX = interpolate(pointX);
+    float interY = interpolate(pointY);
+    float interZ = interpolate(pointZ);
+
+    int cornerA = p[p[p[xi] + yi] + zi];
+    int cornerB = p[p[p[xi] + yi + 1] + zi];
+    int cornerC = p[p[p[xi] + yi] + zi + 1];
+    int cornerD = p[p[p[xi] + yi + 1] + zi + 1];
+    
+    int cornerE = p[p[p[xi + 1] + yi] + zi];
+    int cornerF = p[p[p[xi + 1] + yi + 1] + zi];
+    int cornerG = p[p[p[xi + 1] + yi] + zi + 1];
+    int cornerH = p[p[p[xi + 1] + yi + 1] + zi + 1];
+
+    float cornerAdir = grad(cornerA, pointX, pointY, pointZ);
+    float cornerBdir = grad(cornerB, pointX, pointY - 1, pointZ);
+    float cornerCdir = grad(cornerC, pointX, pointY, pointZ -1);
+    float cornerDdir = grad(cornerD, pointX, pointY -1, pointZ - 1);
+    
+    float cornerEdir = grad(cornerE, pointX - 1, pointY, pointZ);
+    float cornerFdir = grad(cornerF, pointX - 1, pointY - 1, pointZ);
+    float cornerGdir = grad(cornerG, pointX - 1, pointY, pointZ - 1);
+    float cornerHdir = grad(cornerH, pointX - 1, pointY - 1, pointZ - 1);
+    
+    float resultA = lerp(cornerAdir, cornerEdir, interX);
+    float resultB = lerp(cornerBdir, cornerFdir, interX);
+    float resultC = lerp(cornerCdir, cornerGdir, interX);
+    float resultD = lerp(cornerDdir, cornerHdir, interX);
+    
+    float resultE = lerp(resultA, resultB, interY);
+    float resultF = lerp(resultC, resultD, interY);
+    
+    float resultG = lerp(resultE, resultF, interZ);
+    
+    
+    
+    float result = (((resultG + 1) / 2) - 0.25f) * 2;
+    
+    return result;
+    
+    //return y1;
+}
+
+
 float perlin(float x, float y, float z)
 {
     if (repeat > 0)
@@ -108,7 +173,18 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
     }
     //generate a value based on position and add it to the buffer, together with the postion
-    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, perlin(((id.x * size) + startingValue.x) * noiseScale, ((id.y * size) + startingValue.y) * noiseScale, ((id.z * size) + startingValue.z) * noiseScale)));
+    
+    float3 newPos = startingValue;
+    //newPos.x = startingValue.x + ((id.x * size)) / noiseScale;
+    //newPos.y = startingValue.y + ((id.y * size)) / noiseScale;
+    //newPos.z = startingValue.z + ((id.z * size)) / noiseScale;
+    
+    newPos.x = (startingValue.x + (id.x * size)) / noiseScale;
+    newPos.y = (startingValue.y + (id.y * size)) / noiseScale;
+    newPos.z = (startingValue.z + (id.z * size)) / noiseScale;
+    
+    
+    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, selfmadeperlin(newPos.x, newPos.y, newPos.z)));
 
 }
 
