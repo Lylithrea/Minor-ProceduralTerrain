@@ -42,11 +42,31 @@ public static class  PlanePerlin
         {
             for(int x = 0; x < mapWidth; x++)
             {
-                float sampleX = x/scale;
-                float sampleY = y/scale;
 
-                float perlinValue = selfmadeNoise(sampleX + seed, sampleY + seed, scale);
-                noiseMap[x, y] = perlinValue;
+                float frequency = scale;
+                //height
+                float persistence = 0.5f;
+                //frequency
+                float lacunarity = 0.5f;
+                float endPerlin = 0;
+                float weight = 1;
+
+                for (int j = 0; j < 5; j++)
+                {
+
+
+                    float sampleX = x / frequency;
+                    float sampleY = y / frequency;
+
+                    float perlinValue = selfmadeNoise(sampleX, sampleY);
+
+                    endPerlin += perlinValue * weight;
+
+                    weight *= persistence;
+                    frequency *= lacunarity;
+
+                    noiseMap[x, y] = endPerlin;
+                }
             }
         }
 
@@ -75,7 +95,7 @@ public static class  PlanePerlin
         return a + x * (b - a);
     }
 
-    public static float selfmadeNoise(float x, float y, float scale)
+    public static float selfmadeNoise(float x, float y)
     {
         //points in the perlin space
         float pointA = x - Mathf.Floor(x);

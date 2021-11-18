@@ -57,6 +57,23 @@ static float fade(float t)
     return t * t * t * (t * (t * 6 - 15) + 10); // 6t^5 - 15t^4 + 10t^3
 }
 
+static float grad(int hash, float x, float y)
+{
+    switch (hash & 0x3)
+    {
+        case 0x0:
+            return x + y;
+        case 0x1:
+            return -x + y;
+        case 0x2:
+            return x - y;
+        case 0x3:
+            return -x - y;
+        default:
+            return 0; // never happens
+    }
+}
+
 static float grad(int hash, float x, float y, float z)
 {
     switch (hash & 0xF)

@@ -1851,8 +1851,8 @@ MonoBehaviour:
   player: {fileID: 1687258581}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
   scale: 36.62
-  groundLevelHeight: 82.47
-  frequency: 5.26
+  groundLevelHeight: 72.9
+  frequency: 119.26
   radius: 4
   groundLevel: 350
   layerThickness: 1

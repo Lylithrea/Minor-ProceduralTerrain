@@ -20,15 +20,6 @@ RWStructuredBuffer<float4> vertexPerlin;
 static int numThreads = 8;
 
 
-int inc(float num)
-{
-    num++;
-    if (repeat > 0)
-        num %= repeat;
-
-    return num;
-}
-
 
 float interpolate(float value)
 {
@@ -36,10 +27,10 @@ float interpolate(float value)
 }
 
 
+
+
 float selfmadeperlin(float x, float y, float z)
 {
-
-
     int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
     int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
     int zi = (int) z & 255; // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
@@ -94,66 +85,6 @@ float selfmadeperlin(float x, float y, float z)
 }
 
 
-float perlin(float x, float y, float z)
-{
-    if (repeat > 0)
-    { // If we have any repeat on, change the coordinates to their "local" repetitions
-        x = x % repeat;
-        y = y % repeat;
-        z = z % repeat;
-    }
-    
-    
-
-    int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
-    int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
-    int zi = (int) z & 255; // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
-    float xf = x - (int) x;
-    float yf = y - (int) y;
-    float zf = z - (int) z;
-
-    
-    
-    float u = fade(xf);
-    float v = fade(yf);
-    float w = fade(zf);
-
-    float aaa, aba, aab, abb, baa, bba, bab, bbb;
-    aaa = p[p[p[xi] + yi] + zi];
-    aba = p[p[p[xi] + inc(yi)] + zi];
-    aab = p[p[p[xi] + yi] + inc(zi)];
-    abb = p[p[p[xi] + inc(yi)] + inc(zi)];
-    baa = p[p[p[inc(xi)] + yi] + zi];
-    bba = p[p[p[inc(xi)] + inc(yi)] + zi];
-    bab = p[p[p[inc(xi)] + yi] + inc(zi)];
-    bbb = p[p[p[inc(xi)] + inc(yi)] + inc(zi)];
-
-
-    float x1, x2, y1, y2;
-    x1 = lerp(grad((int) aaa, xf, yf, zf), // The gradient function calculates the dot product between a pseudorandom
-                grad((int) baa, xf - 1, yf, zf), // gradient vector and the vector from the input coordinate to the 8
-                u); // surrounding points in its unit cube.
-    x2 = lerp(grad((int) aba, xf, yf - 1, zf), // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
-                grad((int) bba, xf - 1, yf - 1, zf), // values we made earlier.
-                    u);
-    y1 = lerp(x1, x2, v);
-
-    x1 = lerp(grad((int) aab, xf, yf, zf - 1),
-                grad((int) bab, xf - 1, yf, zf - 1),
-                u);
-    x2 = lerp(grad((int) abb, xf, yf - 1, zf - 1),
-                    grad((int) bbb, xf - 1, yf - 1, zf - 1),
-                    u);
-    y2 = lerp(x1, x2, v);
-
-
-    float result = ((lerp(y1, y2, w) + 1) / 2);
-    
-    return result;
-    
-    //return y1;
-}
-
 int getIndex(int x, int y, int z)
 {
     //since xyz is going from 0 to number, it can will return correct number
@@ -175,10 +106,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     //generate a value based on position and add it to the buffer, together with the postion
     
     float3 newPos = startingValue;
-    //newPos.x = startingValue.x + ((id.x * size)) / noiseScale;
-    //newPos.y = startingValue.y + ((id.y * size)) / noiseScale;
-    //newPos.z = startingValue.z + ((id.z * size)) / noiseScale;
-    
+
     newPos.x = (startingValue.x + (id.x * size)) / noiseScale;
     newPos.y = (startingValue.y + (id.y * size)) / noiseScale;
     newPos.z = (startingValue.z + (id.z * size)) / noiseScale;
