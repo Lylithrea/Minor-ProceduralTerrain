@@ -1851,7 +1851,7 @@ MonoBehaviour:
   player: {fileID: 1687258581}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
   scale: 36.62
-  groundLevelHeight: 72.9
+  groundLevelHeight: 0.37
   frequency: 119.26
   radius: 4
   groundLevel: 350
@@ -1859,7 +1859,7 @@ MonoBehaviour:
   cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 2
+  size: 1
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []

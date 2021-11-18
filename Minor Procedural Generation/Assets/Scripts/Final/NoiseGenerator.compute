@@ -27,10 +27,65 @@ float interpolate(float value)
 }
 
 
+static float gradplane(int hash, float x, float y)
+{
+    switch (hash & 0x3)
+    {
+        case 0x0:
+            return x + y;
+        case 0x1:
+            return -x + y;
+        case 0x2:
+            return x - y;
+        case 0x3:
+            return -x - y;
+        default:
+            return 0; // never happens
+    }
+}
+
+float heightmapNoise(float x, float y)
+{
+    //points in the perlin space
+    float pointA = x - floor(x);
+    float pointB = y - floor(y);
+
+    // Calculate the "unit cube" that the point asked will be located in
+    int xi = (int) x & 255;
+    int yi = (int) y & 255;
+    
+    //get a semi-random number from a table for 255 included numbers
+    int testA = p[p[xi] + yi];
+    int testB = p[p[xi + 1] + yi];
+    int testC = p[p[xi] + yi + 1];
+    int testD = p[p[xi + 1] + yi + 1];
+    
+    //based on those random numbers generate a direction, in this case from 4 different directions
+    float testAh = gradplane(testA, pointA, pointB);
+    float testBh = gradplane(testB, pointA - 1, pointB);
+    float testCh = gradplane(testC, pointA, pointB - 1);
+    float testDh = gradplane(testD, pointA - 1, pointB - 1);
+    
+    
+    //Combine the directions together, 2 at the time, first on the X axis
+    double resultA = lerp(testAh, testBh, interpolate(pointA));
+    double resultB = lerp(testCh, testDh, interpolate(pointA));
+
+    //then combine those 2 values together on the y axis
+    float endResult = (float) lerp(resultA, resultB, interpolate(pointB));
+    endResult = (endResult + 1) / 2;
+    return endResult;
+}
 
 
 float selfmadeperlin(float x, float y, float z)
 {
+    float currentHeight = y;
+    
+    x /= noiseScale;
+    y /= noiseScale;
+    z /= noiseScale;
+
     int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
     int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
     int zi = (int) z & 255; // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
@@ -57,8 +112,8 @@ float selfmadeperlin(float x, float y, float z)
 
     float cornerAdir = grad(cornerA, pointX, pointY, pointZ);
     float cornerBdir = grad(cornerB, pointX, pointY - 1, pointZ);
-    float cornerCdir = grad(cornerC, pointX, pointY, pointZ -1);
-    float cornerDdir = grad(cornerD, pointX, pointY -1, pointZ - 1);
+    float cornerCdir = grad(cornerC, pointX, pointY, pointZ - 1);
+    float cornerDdir = grad(cornerD, pointX, pointY - 1, pointZ - 1);
     
     float cornerEdir = grad(cornerE, pointX - 1, pointY, pointZ);
     float cornerFdir = grad(cornerF, pointX - 1, pointY - 1, pointZ);
@@ -79,8 +134,44 @@ float selfmadeperlin(float x, float y, float z)
     
     float result = (((resultG + 1) / 2) - 0.25f) * 2;
     
-    return result;
+    //float test = heightmapNoise((x / 5), (z / 5));
+    float noise = 0;
+
+    float weight = height;
     
+            //height
+    float persistence = 0.45f;
+        //frequency
+    float lacunarity = 0.45f;
+        
+    float testScale = 50;
+        
+    
+    for (int j = 0; j < 3; j++)
+    {
+        float test2 = heightmapNoise(x / testScale, y / testScale);
+        noise += (test2 * weight);
+        testScale *= lacunarity;
+        weight *= persistence;
+    }
+        
+    
+    
+    result += (currentHeight - 350 - noise) / 100;
+    
+    return result;
+    float test = 0;
+    float floatweight = currentHeight / 350;
+    if (floatweight >= 0)
+    {
+        result += test * floatweight;
+    }
+    if (result > 1)
+    {
+        result = 1;
+    }
+    return result;
+
     //return y1;
 }
 
@@ -107,12 +198,14 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float3 newPos = startingValue;
 
-    newPos.x = (startingValue.x + (id.x * size)) / noiseScale;
-    newPos.y = (startingValue.y + (id.y * size)) / noiseScale;
-    newPos.z = (startingValue.z + (id.z * size)) / noiseScale;
-    
+    newPos.x = (startingValue.x + (id.x * size)) ;
+    newPos.y = (startingValue.y + (id.y * size)) ;
+    newPos.z = (startingValue.z + (id.z * size)) ;
     
     vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, selfmadeperlin(newPos.x, newPos.y, newPos.z)));
+    
+
+        
 
 }
 
