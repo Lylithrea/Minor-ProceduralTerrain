@@ -11,6 +11,12 @@ const float1 size;
 const float1 noiseScale;
 const float1 repeat;
 const int pointsPerAxis;
+const float1 groundHeight;
+const float1 mountainHeight;
+const float1 persistence;
+const float1 lacunarity;
+const int octaves = 1;
+
 
 float3 startingValue;
 
@@ -137,19 +143,16 @@ float selfmadeperlin(float x, float y, float z)
     //float test = heightmapNoise((x / 5), (z / 5));
     float noise = 0;
 
-    float weight = height;
+    float weight = 1;
     
-            //height
-    float persistence = 0.45f;
-        //frequency
-    float lacunarity = 0.45f;
+
         
-    float testScale = 50;
+    float testScale = noiseScale;
         
     
-    for (int j = 0; j < 3; j++)
+    for (int j = 0; j <octaves; j++)
     {
-        float test2 = heightmapNoise(x / testScale, y / testScale);
+        float test2 = heightmapNoise(x / testScale, z / testScale);
         noise += (test2 * weight);
         testScale *= lacunarity;
         weight *= persistence;
@@ -157,9 +160,40 @@ float selfmadeperlin(float x, float y, float z)
         
     
     
-    result += (currentHeight - 350 - noise) / 100;
+    
+    //result -= (currentHeight - 350) / 50;
+    
+    float maxHeight = mountainHeight + groundHeight;
+
+    if (currentHeight > groundHeight)
+    {
+        
+        //y
+        float cave = (currentHeight - groundHeight) / 50 * noise;
+        result -= cave;
+        
+        float max = groundHeight + (maxHeight - groundHeight) * (noise);
+        if (currentHeight > max - 50)
+        {
+            float delta2 = max - currentHeight;
+            result -= delta2 / 10;
+        }
+            
+        
+        //1 is air
+        //result = 1;
+        //result =  heightmapNoise(x, z);
+        //result += noise;
+    }
+    if (result > 1)
+    {
+        result = 1;
+    }
     
     return result;
+    
+    
+    
     float test = 0;
     float floatweight = currentHeight / 350;
     if (floatweight >= 0)

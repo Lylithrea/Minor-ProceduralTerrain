@@ -10,12 +10,6 @@ RWStructuredBuffer<float4> vertexPerlin;
 const int pointsPerAxis;
 const float cutoff;
 const float3 startingValue;
-const float1 groundLevel;
-const float1 layerThickness;
-
-Texture2D<float4> groundTex;
-const float1 height;
-const float1 frequency;
 
 static int p[] =
 {
@@ -118,9 +112,6 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
 {
     int configurationNumber = 0;
     
-    uint w, h;
-    groundTex.GetDimensions(w, h);
-    
     
     //loops through all corners and based on which corner we are on we increase the configuration number
     for (int i = 0; i < 8; i++)
@@ -131,28 +122,6 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
         //    configurationNumber += pow(2, (i));
         //}        
         
-
-        
-        float amplitude = 1;
-        float weight = height;
-        
-        float weightMultiplier = 0.75f;
-        
-        //height
-        float persistence = 0.45f;
-        //frequency
-        float lacunarity = 0.45f;
-        
-        float testScale = frequency;
-        
-        for (int j = 0; j < 1; j++)
-        {
-            float test = heightmapNoise((corners[i].x + startingValue.x) / testScale, (corners[i].z + startingValue.z) / testScale);
-            noise += (test * weight);
-            testScale *= lacunarity;
-            weight *= persistence;
-        }
-        
        
         //test *= height;
         //corners[i].w = noise;
@@ -161,11 +130,11 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
         //secondCutoff[i] = cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise));
 
         
-        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness)) > cutoff)
-        { 
+        //if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness)) > cutoff)
+        //{ 
             //corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness);
             //configurationNumber += pow(2, (i));
-        }
+        //}
         
         
         
@@ -241,125 +210,10 @@ float3 interpolate(float4 vertexA, float4 vertexB)
 float3 lerp(float4 vertexA, float4 vertexB)
 {
     float test = (cutoff  - vertexA.w) / (vertexB.w - vertexA.w);
-    if (test < 0)
-    {
-        
-        //test *= -1;
-    }
+
     float3 testresult = vertexA.xyz + test * (vertexB.xyz - vertexA.xyz);
 
     return testresult;
-    
-    float t = (cutoff - vertexA.w) / (vertexB.w - vertexA.w);
-    if (t < 0)
-    {
-        //t *= -1;
-    }
-    float3 result = (vertexA.xyz + (t * (vertexB.xyz - vertexA.xyz)));
-    return result;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    if (vertexB.x > vertexA.x)
-    {
-        if (vertexB.x < result.x)
-        {
-            result.x = vertexB.x;
-        }
-        else if (vertexA.x > result.x)
-        {
-            result.x = vertexB.x;
-        }
-    }
-    else if (vertexA.x < result.x)
-    {
-        result.x = vertexA.x;
-    }
-
-    
-    if (vertexB.y > vertexA.y)
-    {
-        if (vertexB.y < result.y)
-        {
-            result.y = vertexB.y;
-        }
-        else if (vertexA.y > result.y)
-        {
-            result.y = vertexB.y;
-        }
-    }
-    else if (vertexA.y < result.y)
-    {
-        result.y = vertexA.y;
-    }
-    
-    
-    if (vertexB.z > vertexA.z)
-    {
-        if (vertexB.z < result.z)
-        {
-            result.z = vertexB.z;
-        }
-        else if (vertexA.z > result.z)
-        {
-            result.z = vertexB.z;
-        }
-    }
-    else if (vertexA.z < result.z)
-    {
-        result.z = vertexA.z;
-    }
-    
-    return result;
-    
-    
-    if (vertexB.y > result.y)
-    {
-        result.y = vertexB.y;
-    }
-    else if (vertexA.y > result.y)
-    {
-        result.y = vertexA.y;
-    }
-    
-    
-    if (vertexB.z > result.z)
-    {
-        result.z = vertexB.z;
-    }
-    else if (vertexA.z > result.z)
-    {
-        result.z = vertexA.z;
-    }
-
-    
-    if (vertexB.x > result.x || vertexB.y > result.y || vertexB.z > result.z)
-    {
-        return vertexB.xyz;
-    }
-    else if (vertexA.x < result.x || vertexA.y < result.y || vertexA.z < result.z)
-    {
-        return vertexA.xyz;
-    }
-    else
-    {
-        return result.xyz;
-    }
-    
-    
-    
-    
-    
 }
 
 
