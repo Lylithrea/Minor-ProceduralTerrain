@@ -10,12 +10,6 @@ RWStructuredBuffer<float4> vertexPerlin;
 const int pointsPerAxis;
 const float cutoff;
 const float3 startingValue;
-const float1 groundLevel;
-const float1 layerThickness;
-
-Texture2D<float4> groundTex;
-const float1 height;
-const float1 frequency;
 
 static int p[] =
 {
@@ -109,13 +103,14 @@ float heightmapNoise(float x, float y)
 
     return endResult;
 }
+float noise = 0;
+//float secondCutoff[8] = 0;
+//float secondValue[8] = 0;
+//float2x3 newValues;
 
 int generateConfiguration(float4 corners[8], int idx, int idz)
 {
     int configurationNumber = 0;
-    
-    uint w, h;
-    groundTex.GetDimensions(w, h);
     
     
     //loops through all corners and based on which corner we are on we increase the configuration number
@@ -127,34 +122,24 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
         //    configurationNumber += pow(2, (i));
         //}        
         
-        float noise = 0;
-        
-        float amplitude = 1;
-        float weight = height;
-        
-        float weightMultiplier = 0.75f;
-        
-        //height
-        float persistence = 0.45f;
-        //frequency
-        float lacunarity = 0.45f;
-        
-        float testScale = frequency;
-        
-        for (int j = 0; j < 5; j++)
-        {
-            float test = heightmapNoise((corners[i].x + startingValue.x) / testScale, (corners[i].z + startingValue.z) / testScale);
-            noise += (test * weight);
-            testScale *= lacunarity;
-            weight *= persistence;
-        }
-        
        
         //test *= height;
+        //corners[i].w = noise;
+        
+        //noise = 0;
+        //secondCutoff[i] = cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise));
 
         
+        //if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness)) > cutoff)
+        //{ 
+            //corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness);
+            //configurationNumber += pow(2, (i));
+        //}
         
-        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness)) > cutoff)
+        
+        
+        
+        if (corners[i].w > cutoff)
         {
             configurationNumber += pow(2, (i));
         }
@@ -212,11 +197,23 @@ float3 interpolate(float4 vertexA, float4 vertexB)
     //return interpolatedVector;
 
     
+    float t = (cutoff - vertexA.w) / (vertexB.w - vertexA.w);
+    return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
     
-    return (vertexA.xyz + vertexB.xyz) / 2;
+    
+    //return (vertexA.xyz + vertexB.xyz) / 2;
     
     //float t = (0.5f - vertexA.w) / (vertexB.w - vertexA.w);
     //return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
+}
+
+float3 lerp(float4 vertexA, float4 vertexB)
+{
+    float test = (cutoff  - vertexA.w) / (vertexB.w - vertexA.w);
+
+    float3 testresult = vertexA.xyz + test * (vertexB.xyz - vertexA.xyz);
+
+    return testresult;
 }
 
 
@@ -226,9 +223,9 @@ void createTriangles(float4 corners[8], const int configurationNumber)
     for (int i = 0; triTable[configurationNumber][i] !=  -1; i += 3)
     {
 
-        float3 newVertexA = interpolate(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
-        float3 newVertexB = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
-        float3 newVertexC = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]] , corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
+        float3 newVertexA = lerp(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
+        float3 newVertexB = lerp(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
+        float3 newVertexC = lerp(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]], corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
         
         
         TriangleStruct newTriangle1;
