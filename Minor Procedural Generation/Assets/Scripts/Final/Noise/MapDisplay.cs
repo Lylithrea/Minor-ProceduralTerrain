@@ -21,7 +21,7 @@ public class MapDisplay : MonoBehaviour
         {
             for(int x = 0; x < width; x++)
             {
-                colourMap[y * width + x] = Color.Lerp(Color.black, Color.white, (noiseMap[x, y] + 1)/2);
+                colourMap[y * width + x] = Color.Lerp(Color.black, Color.white, noiseMap[x, y]);
                 //Debug.Log("On point (" + x + "," + y + " has the value of : " + noiseMap[x, y]);
             }
         }

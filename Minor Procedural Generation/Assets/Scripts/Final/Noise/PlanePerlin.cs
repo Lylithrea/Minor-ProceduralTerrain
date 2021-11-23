@@ -51,10 +51,8 @@ public static class  PlanePerlin
                 float endPerlin = 0;
                 float weight = 1;
 
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 1; j++)
                 {
-
-
                     float sampleX = x / frequency;
                     float sampleY = y / frequency;
 
@@ -72,6 +70,8 @@ public static class  PlanePerlin
 
         return noiseMap;
     }
+
+
 
     public static float interpolate(float value)
     {
@@ -124,6 +124,7 @@ public static class  PlanePerlin
         //then combine those 2 values together on the y axis
         float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
 
+        endResult = (endResult + 1) / 2;
         return endResult;
     }
 
