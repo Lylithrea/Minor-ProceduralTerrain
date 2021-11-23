@@ -4,12 +4,13 @@ using UnityEngine;
 using UnityEditor;
 
 
-[CustomEditor(typeof(CubePerlin))]
+[CustomEditor(typeof(CubeWorms))]
 public class CubePerlinGenerator : Editor
 {
     public override void OnInspectorGUI()
     {
-        CubePerlin mapGen = (CubePerlin)target;
+        CubeWorms mapGen = (CubeWorms)target;
+
 
         //checks if any values has changed
         if (DrawDefaultInspector())

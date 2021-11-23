@@ -452,6 +452,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hudRefreshRate: 0.5
+  samples: 100
+  totalTime: 0
 --- !u!114 &246869650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -675,11 +677,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c612a5d649424c74dbbac55f311a8424, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapWidth: 25
-  mapHeight: 25
-  noiseScale: 15.6
-  seed: 3
+  mapWidth: 350
+  mapHeight: 350
+  noiseScale: 0.57
+  seed: 1
   autoUpdate: 1
+  radius: 3.88
+  length: 492.43
   texture: {fileID: 2800000, guid: 5e57214a9c050584f85a481e09a17a13, type: 3}
   mat: {fileID: 2100000, guid: 2e21dbb8166b6b04ba2563fba5a69bb3, type: 2}
 --- !u!4 &257314961
@@ -1051,7 +1055,7 @@ Transform:
   m_GameObject: {fileID: 820136374}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 25, y: 1, z: 25}
+  m_LocalScale: {x: 350, y: 1, z: 350}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 14
@@ -1379,17 +1383,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 1366999958}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1150b68f08695b48b51910b717ebc39, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ed9611b220b3874a93bf2ff713c7348, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapWidth: 15
-  mapHeight: 15
-  mapLenght: 15
-  noiseScale: 5.04
+  mapWidth: 25
+  mapHeight: 25
+  mapLenght: 25
+  noiseScale: 1.13
   seed: 0
   autoUpdate: 0
-  cutOffValue: 0
+  cutOffValue: 0.49
   cutOff: 0
+  radius: 1
+  length: 10
 --- !u!4 &1366999960
 Transform:
   m_ObjectHideFlags: 0
@@ -1850,16 +1856,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1687258581}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
-  scale: 34.28
+  scale: 47.68
   groundLevelHeight: 91.2
   groundLevel: 350
-  persistence: 0.66
-  lacunarity: 0.4
-  octaves: 4
+  persistence: 0.67
+  lacunarity: 0.37
+  octaves: 6
   radius: 4
   cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
-  pointsPerAxis: 20
+  pointsPerAxis: 10
   size: 1
   levelOfDetail: 1
   levelOfDetailRadius: 2

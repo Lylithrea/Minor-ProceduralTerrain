@@ -86,11 +86,8 @@ float heightmapNoise(float x, float y)
 
 float selfmadeperlin(float x, float y, float z)
 {
-    float currentHeight = y;
-    
-    x /= noiseScale;
-    y /= noiseScale;
-    z /= noiseScale;
+
+ 
 
     int xi = (int) x & 255; // Calculate the "unit cube" that the point asked will be located in
     int yi = (int) y & 255; // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
@@ -139,18 +136,29 @@ float selfmadeperlin(float x, float y, float z)
     
     
     float result = (((resultG + 1) / 2) - 0.25f) * 2;
+    return result;
+
+    //return y1;
+}
+
+
+float worms(float x, float y, float z)
+{
+    float currentHeight = y;
     
-    //float test = heightmapNoise((x / 5), (z / 5));
+    x /= noiseScale;
+    y /= noiseScale;
+    z /= noiseScale;
+    
+    float result = selfmadeperlin(x, y, z);
+    //result = 0;
+    
+    //height noise map
     float noise = 0;
-
     float weight = 1;
-    
-
-        
     float testScale = noiseScale;
         
-    
-    for (int j = 0; j <octaves; j++)
+    for (int j = 0; j < octaves; j++)
     {
         float test2 = heightmapNoise(x / testScale, z / testScale);
         noise += (test2 * weight);
@@ -160,14 +168,10 @@ float selfmadeperlin(float x, float y, float z)
         
     
     
-    
-    //result -= (currentHeight - 350) / 50;
-    
+    //makes sure closer to the surface there is more ground
     float maxHeight = mountainHeight + groundHeight;
-
     if (currentHeight > groundHeight)
     {
-        
         //y
         float cave = (currentHeight - groundHeight) / 50 * noise;
         result -= cave;
@@ -178,12 +182,6 @@ float selfmadeperlin(float x, float y, float z)
             float delta2 = max - currentHeight;
             result -= delta2 / 10;
         }
-            
-        
-        //1 is air
-        //result = 1;
-        //result =  heightmapNoise(x, z);
-        //result += noise;
     }
     if (result > 1)
     {
@@ -193,7 +191,7 @@ float selfmadeperlin(float x, float y, float z)
     return result;
     
     
-    
+    //something funny
     float test = 0;
     float floatweight = currentHeight / 350;
     if (floatweight >= 0)
@@ -205,8 +203,6 @@ float selfmadeperlin(float x, float y, float z)
         result = 1;
     }
     return result;
-
-    //return y1;
 }
 
 
@@ -236,7 +232,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     newPos.y = (startingValue.y + (id.y * size)) ;
     newPos.z = (startingValue.z + (id.z * size)) ;
     
-    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, selfmadeperlin(newPos.x, newPos.y, newPos.z)));
+    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, worms(newPos.x, newPos.y, newPos.z)));
+    
+    
+    //vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, 0.5f));
     
 
         

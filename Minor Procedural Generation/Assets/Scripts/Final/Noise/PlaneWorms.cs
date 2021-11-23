@@ -59,7 +59,7 @@ public static class PlaneWorms
                 {
                     //Debug.Log("Something!");
                     //noiseMap[(int)x, (int)y] = 1;
-                    generateWorms(sampleX, sampleY, length, radius, mapWidth, mapHeight, scale, noiseMap);
+                    generateWorms(x, y, length, radius, mapWidth, mapHeight, scale, noiseMap);
                 }
 
                 //noiseMap[x, y] = 0;
@@ -81,7 +81,7 @@ public static class PlaneWorms
         int currentX = Mathf.RoundToInt(x);
         int currentY = Mathf.RoundToInt(y);
 
-        Debug.Log("Current position: " + currentX + " , " + currentY);
+        //Debug.Log("Current position: " + currentX + " , " + currentY);
 
         //loop through 1 row of perlin noise
         for(int i = 0; i < length; i++)
