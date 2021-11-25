@@ -679,10 +679,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapWidth: 350
   mapHeight: 350
-  noiseScale: 0.57
+  noiseScale: 0.56
   seed: 1
   autoUpdate: 1
-  radius: 3.88
+  radius: 2.63
   length: 492.43
   texture: {fileID: 2800000, guid: 5e57214a9c050584f85a481e09a17a13, type: 3}
   mat: {fileID: 2100000, guid: 2e21dbb8166b6b04ba2563fba5a69bb3, type: 2}
@@ -1856,11 +1856,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1687258581}
   noiseShader: {fileID: 7200000, guid: b35223e92953e314ca09eb1520f27457, type: 3}
-  scale: 47.68
-  groundLevelHeight: 91.2
+  scale: 53.96
+  groundLevelHeight: 89.81
   groundLevel: 350
-  persistence: 0.67
-  lacunarity: 0.37
+  persistence: 0.82
+  lacunarity: 0.626
   octaves: 6
   radius: 4
   cutoff: 0.48

@@ -102,20 +102,49 @@ public static class PlaneWorms
                 offsetY *= -1;
             }
 
-            int directionAX = offsetY * -1;
-            int directionAY = offsetX;
-
-            int directionBX = offsetY;
-            int directionBY = offsetX * -1;
-
             currentX += offsetX;
             currentY += offsetY;
 
 
+            List<Vector2> points = new List<Vector2>();
+            List<Vector2> allPoints = new List<Vector2>();
+            points.Add(new Vector2(currentX, currentY));
 
             for (int j = 0; j < radius; j++)
             {
-                float perlinValue = 1;
+                List<Vector2> newPoints = new List<Vector2>();
+                foreach(Vector2 point in points)
+                {
+                    if (point.x < mapWidth && point.y < mapHeight && point.x >= 0 && point.y >= 0)
+                    {
+                        noiseMap[(int)point.x, (int)point.y] += 1 - j / radius;
+                        if (!allPoints.Contains(new Vector2(point.x, point.y + 1)))
+                        {
+                            newPoints.Add(new Vector2(point.x, point.y + 1));
+                            allPoints.Add(new Vector2(point.x, point.y + 1));
+                        }
+                        if (!allPoints.Contains(new Vector2(point.x + 1, point.y)))
+                        {
+                            newPoints.Add(new Vector2(point.x + 1, point.y));
+                            allPoints.Add(new Vector2(point.x + 1, point.y));
+                        }
+                        if (!allPoints.Contains(new Vector2(point.x, point.y - 1)))
+                        {
+                            newPoints.Add(new Vector2(point.x, point.y - 1));
+                            allPoints.Add(new Vector2(point.x, point.y - 1));
+                        }
+                        if (!allPoints.Contains(new Vector2(point.x - 1, point.y)))
+                        {
+                            newPoints.Add(new Vector2(point.x - 1, point.y));
+                            allPoints.Add(new Vector2(point.x - 1, point.y));
+                        }
+                    }
+                }
+                points.Clear();
+                points = newPoints;
+
+
+                /*float perlinValue = 1;
                 if (currentX + directionAX * j < mapWidth && currentY + directionAY * j < mapHeight && currentX + directionAX * j >= 0 && currentY + directionAY * j >= 0)
                 {
                     int currentPixelX = currentX + directionAX * j;
@@ -133,8 +162,8 @@ public static class PlaneWorms
                     //float weight = (currentPixelX + currentPixelY) / (currentX + currentY);
                     float weight = 1 - j / radius;
                     noiseMap[currentPixelX, currentPixelY] += perlinValue * weight;
-                }
- 
+                }*/
+
             }
         }
 
