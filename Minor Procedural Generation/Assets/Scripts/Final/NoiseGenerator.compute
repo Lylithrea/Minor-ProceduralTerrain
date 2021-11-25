@@ -142,6 +142,22 @@ float selfmadeperlin(float x, float y, float z)
 }
 
 
+int getIndex(int x, int y, int z)
+{
+    //since xyz is going from 0 to number, it can will return correct number
+    //example: if points per axis is 10, it means that xyz max is 9. So the final number will be 999
+    //this is correct because 10x10x10 is 1000, and 0 - 999 is 1000.
+    int index = z * pointsPerAxis * pointsPerAxis + y * pointsPerAxis + x;
+
+    return index;
+}
+
+
+
+float length = 350;
+
+
+
 float worms(float x, float y, float z)
 {
     float currentHeight = y;
@@ -151,6 +167,30 @@ float worms(float x, float y, float z)
     z /= noiseScale;
     
     float result = selfmadeperlin(x, y, z);
+    
+    float low = 0.45f;
+    float high = 0.65f;
+    float weight2 = 0.5f;
+  
+    
+    if (result < high && result > low)
+    {
+        float value = result - low;
+        value = value * (1 / (high - low));
+        value *= 2;
+        value -= 1;
+        if (value < 0)
+        {
+            value *= -1;
+        }
+        result = 1;
+    }
+    else
+    {
+        result = 0;
+    }
+    return result;
+        
     //result = 0;
     
     //height noise map
@@ -187,7 +227,7 @@ float worms(float x, float y, float z)
     {
         result = 1;
     }
-    
+    vertexPerlin[getIndex(x, y, z)] = (float4(x * size, y * size, z * size, result));
     return result;
     
     
@@ -206,15 +246,7 @@ float worms(float x, float y, float z)
 }
 
 
-int getIndex(int x, int y, int z)
-{
-    //since xyz is going from 0 to number, it can will return correct number
-    //example: if points per axis is 10, it means that xyz max is 9. So the final number will be 999
-    //this is correct because 10x10x10 is 1000, and 0 - 999 is 1000.
-    int index = z * pointsPerAxis * pointsPerAxis + y * pointsPerAxis + x;
 
-    return index;
-}
 
 
 [numthreads(numThreads, numThreads, numThreads)]
@@ -225,13 +257,14 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
     }
     //generate a value based on position and add it to the buffer, together with the postion
-    
     float3 newPos = startingValue;
-
-    newPos.x = (startingValue.x + (id.x * size)) ;
-    newPos.y = (startingValue.y + (id.y * size)) ;
-    newPos.z = (startingValue.z + (id.z * size)) ;
     
+    newPos.x = (startingValue.x + (id.x * size));
+    newPos.y = (startingValue.y + (id.y * size));
+    newPos.z = (startingValue.z + (id.z * size));
+    
+
+    //worms(id.x, id.y, id.z);
     vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, worms(newPos.x, newPos.y, newPos.z)));
     
     
