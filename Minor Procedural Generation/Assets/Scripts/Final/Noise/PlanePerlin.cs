@@ -53,7 +53,7 @@ public static class  PlanePerlin
                 float gain = 5f;
 
 
-                for (int j = 0; j < 2; j++)
+                for (int j = 0; j < 1; j++)
                 {
                     float sampleX = x / frequency;
                     float sampleY = y / frequency;
@@ -70,20 +70,52 @@ public static class  PlanePerlin
                     weight *= persistence;
                     frequency *= lacunarity;
 
-                    weight = weight > 1.0f ? 1.0f : weight < 0f ? 0f : weight;
+                    //weight = weight > 1.0f ? 1.0f : weight < 0f ? 0f : weight;
 
                 }
 
-/*                endPerlin += selfmadeNoise(x / agressiveness, y / agressiveness) * weight2;
-                if (endPerlin > high)
+                float freq = 100;
+                float sampleX2 = x / freq;
+                float sampleY2 = y / freq;
+                float cavePerlin = 1;
+
+                for (int n = 1; n < 6; n++)
                 {
-                    endPerlin = 1;
+                    float factor = Mathf.Pow(2, n);
+                    cavePerlin -= selfmadeNoise(sampleX2 * factor, sampleY2 * factor) / factor;
+                }
+
+
+                float sampleX3 = x / frequency;
+                float sampleY3 = y / frequency;
+                endPerlin = 1;
+                for (int n = 1; n < 6; n++)
+                {
+                    float factor = Mathf.Pow(2, n);
+                    endPerlin -= selfmadeNoise(sampleX3 * factor, sampleY3 * factor) / factor;
+                }
+
+                //endPerlin += selfmadeNoise(x / agressiveness, y / agressiveness) * weight2;
+                //float newHigh2 = high;
+                //newHigh2 -= selfmadeNoise(x / agressiveness, y / agressiveness) * weight2;
+
+                if(y > mapHeight / 2)
+                {
+                    float delta = y - mapHeight / 2;
+                    //cavePerlin += (delta / (mapHeight / 2))/5;
+                }
+
+                float caveheight = 0.45f;
+                if (cavePerlin > caveheight)
+                {
+                    cavePerlin = 0;
                 }
                 else
                 {
-                    endPerlin = 0;
-                }*/
+                    cavePerlin = 1;
+                }
 
+                //endPerlin = cavePerlin;
 
                 float newHigh = high;
                 float newLow = low;
@@ -124,7 +156,7 @@ public static class  PlanePerlin
                 {
                     endPerlin = 0;
                 }
-                noiseMap[x, y] = endPerlin;
+                noiseMap[x, y] = cavePerlin + endPerlin;
                 //noiseMap[x, y] = selfmadeNoise(x / 50.5f, y / 50.5f);
 
             }
@@ -186,7 +218,7 @@ public static class  PlanePerlin
         //then combine those 2 values together on the y axis
         float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
 
-        //endResult = (endResult + 1) / 2;
+        endResult = (endResult + 1) / 2;
         return endResult;
     }
 

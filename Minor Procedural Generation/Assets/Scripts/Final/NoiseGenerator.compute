@@ -162,50 +162,168 @@ float worms(float x, float y, float z)
 {
     float currentHeight = y;
     
+    float baseX = x;
+    float baseY = y;
+    float baseZ = z;
+    
+    
+    float caveX = x / 100;
+    float caveY = y / 100;
+    float caveZ = z / 100;
+    
+
     x /= noiseScale;
     y /= noiseScale;
     z /= noiseScale;
     
-    float result = selfmadeperlin(x, y, z);
+    //float result = selfmadeperlin(x, y, z);
     
+    float result = 1;
+    float caveResult = 1;
+    
+    float weight2 = 0;
+  
+    float agressiveness = 15.5f;
+    
+
+    
+    for (int n = 1; n < 5; n++)
+    {
+        float factor = pow(2, n);
+        result -= selfmadeperlin(x * factor, y * factor, z * factor) / factor;
+    }
+    
+    
+    for (int m = 1; m < 5; m++)
+    {
+        float factor = pow(2, m);
+        caveResult -= selfmadeperlin(caveX * factor, caveY * factor, caveZ * factor) / factor;
+    }
+    
+    float caveheight = 0.65f;
+    if (caveResult > caveheight)
+    {
+        caveResult = 0;
+    }
+    else
+    {
+        caveResult = 1 - (caveResult / caveheight);
+    }
+    
+    
+    
+    //cave worms
     float low = 0.45f;
     float high = 0.65f;
-    float weight2 = 0.5f;
-  
+
     
-    if (result < high && result > low)
+    float newHigh = high;
+    float newLow = low;
+
+    float scalar = selfmadeperlin(x / 25.5f, y / 25.5f, z / 25.5f);
+    
+    scalar *= agressiveness;
+    scalar -= agressiveness / 2;
+
+
+    if (weight2 != 0)
+    {
+        newHigh += scalar * weight2;
+        newLow -= scalar * weight2;
+    }
+    
+    if (result < newHigh && result > newLow)
     {
         float value = result - low;
-        value = value * (1 / (high - low));
+        value = value * (1 / (newHigh - newLow));
         value *= 2;
         value -= 1;
         if (value < 0)
         {
             value *= -1;
         }
-        result = 1;
+        result = 1 - value;
     }
     else
     {
         result = 0;
     }
-    return result;
+
+    
+    //meh
+    //return caveResult + result;
+    
+    //meh
+    //return result;
+    
+    //for pretty good not interconnected cave systems
+    //return caveResult;
+    
+    
+    
+   //result += selfmadeperlin(x / 350, y / 350, z / 350) / 2;
+    //result += selfmadeperlin(x / agressiveness, y / agressiveness, z / agressiveness) * weight2;
+
         
     //result = 0;
     
     //height noise map
     float noise = 0;
     float weight = 1;
-    float testScale = noiseScale;
+    float testScale = 150;
         
     for (int j = 0; j < octaves; j++)
     {
-        float test2 = heightmapNoise(x / testScale, z / testScale);
+        float test2 = heightmapNoise(baseX / testScale , baseZ / testScale );
         noise += (test2 * weight);
         testScale *= lacunarity;
         weight *= persistence;
     }
         
+    noise = (noise / (persistence * octaves));
+    
+    float endResult = caveResult;
+    //endResult += (currentHeight - 350 - noise) / 100;
+    
+    float gh = 350;
+ 
+    float mh = 50;
+    float ch = 300;
+    
+    //1 = air!! -------------------------------------------------------
+
+    
+    float topheight = gh;
+    //endResult = 0;
+
+    topheight += noise * mh;
+    float caveheight2 = ch + noise * mh;
+    
+    if (currentHeight > caveheight2)
+    {
+        //caves
+        if (caveheight2 > gh)
+        {
+            endResult -= (1 - (caveheight2 - currentHeight) / (caveheight2 - ch) * noise);
+        }
+        else
+        {
+            endResult -= (1 - (gh - currentHeight) / (gh - ch) * noise);
+        }
+        
+    }
+    clamp(endResult, 0, 1);
+    if (currentHeight > topheight)
+    {
+        //mountains
+        endResult += (1 - (topheight - currentHeight) / (topheight - gh));
+    }
+    
+    return endResult;
+    
+    
+    
+    
     
     
     //makes sure closer to the surface there is more ground
@@ -213,21 +331,23 @@ float worms(float x, float y, float z)
     if (currentHeight > groundHeight)
     {
         //y
-        float cave = (currentHeight - groundHeight) / 50 * noise;
-        result -= cave;
+        float cave = (currentHeight - groundHeight) / 100 * noise;
+        endResult -= cave;
         
         float max = groundHeight + (maxHeight - groundHeight) * (noise);
         if (currentHeight > max - 50)
         {
             float delta2 = max - currentHeight;
-            result -= delta2 / 10;
+            //endResult -= delta2 / 10;
         }
     }
-    if (result > 1)
+    if (endResult > 1)
     {
-        result = 1;
+        endResult = 1;
     }
-    vertexPerlin[getIndex(x, y, z)] = (float4(x * size, y * size, z * size, result));
+    
+    return endResult;
+    //vertexPerlin[getIndex(x, y, z)] = (float4(x * size, y * size, z * size, result));
     return result;
     
     
