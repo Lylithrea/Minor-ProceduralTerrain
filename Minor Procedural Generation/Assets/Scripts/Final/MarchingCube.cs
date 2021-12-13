@@ -19,7 +19,7 @@ namespace MarchCubes
         public static Generation.Triangle[] marchingCubesGenerator(Vector4[] vertexPerlin, int points)
         {
             //in the future this might be updated dynamicly because of vertices points per chunk
-            int currentPoints = pointsPerAxis * points;
+            int currentPoints = pointsPerAxis  * points;
 
             int numVoxelsPerAxis = currentPoints - 1;
             int numVoxels = numVoxelsPerAxis * numVoxelsPerAxis * numVoxelsPerAxis;

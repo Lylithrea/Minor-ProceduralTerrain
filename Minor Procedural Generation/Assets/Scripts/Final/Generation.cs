@@ -12,11 +12,6 @@ public class Generation : GenerationTooling
 
     void Start()
     {
-
-        //gain the positions of points within a chunk, this is always the same
-        //we will use the chunks position to gain the correct values in world space
-        GainChunkPositions();
-
         //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
         setupValues();
 
@@ -70,6 +65,7 @@ public class Generation : GenerationTooling
                     if(!allChunks.ContainsKey(new Vector3(x, y, z)))
                     {
                         chunkQueue.Enqueue(new Vector3(x, y, z));
+
                         currentPlayerChunks.Add(new Vector3(x, y, z));
                     }
                 }
@@ -147,7 +143,8 @@ public class Generation : GenerationTooling
                 {
                     Chunks newchunk;
                     newchunk.chunk = allChunks[checkChunkPos];
-                    newchunk.points = levelOfDetail + 1;
+                    //newchunk.points = levelOfDetail + 1;
+                    newchunk.points = 1;
                     updateQueue.Enqueue(newchunk);
                     //UpdateMesh(allChunks[checkChunkPos], levelOfDetail + 1);
                 }
@@ -207,6 +204,7 @@ public class Generation : GenerationTooling
             allChunks.Remove(position);
         }
     }
+
 
     /// <summary>
     /// Creates a new chunk with mesh on given position.

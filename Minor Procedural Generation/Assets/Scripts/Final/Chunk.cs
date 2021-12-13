@@ -96,7 +96,7 @@ public class Chunk : MonoBehaviour
             //Array.Clear(generator.triangles, 0, generator.triangles.Length);
             if (generator.currentChunk == newPosition)
             {
-                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(2), 2);
+                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
             }
             else
             {

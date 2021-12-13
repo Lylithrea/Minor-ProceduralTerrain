@@ -10,21 +10,107 @@ RWStructuredBuffer<float4> vertexPerlin;
 const int pointsPerAxis;
 const float cutoff;
 const float3 startingValue;
-const float1 groundLevel;
-const float1 layerThickness;
 
-Texture2D<float4> groundTex;
-const float1 height;
-const float1 frequency;
+static int p[] =
+{
+    151, 160, 137, 91, 90, 15, // Hash lookup table as defined by Ken Perlin.  This is a randomly
+    131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, // arranged array of all numbers from 0-255 inclusive.
+    190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33,
+    88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166,
+    77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244,
+    102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196,
+    135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123,
+    5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42,
+    223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+    129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
+    251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
+    49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
+    138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
+    151, 160, 137, 91, 90, 15, // Hash lookup table as defined by Ken Perlin.  This is a randomly
+    131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, // arranged array of all numbers from 0-255 inclusive.
+    190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33,
+    88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166,
+    77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244,
+    102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196,
+    135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123,
+    5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42,
+    223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+    129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
+    251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
+    49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254,
+    138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
+};
+
+static float lerp(float a, float b, float x)
+{
+    return a + x * (b - a);
+}
 
 
+
+float interpolate(float value)
+{
+    return value * value * value * (value * (value * 6 - 15) + 10);
+}
+
+static float grad(int hash, float x, float y)
+{
+    switch (hash & 0x3)
+    {
+        case 0x0:
+            return x + y;
+        case 0x1:
+            return -x + y;
+        case 0x2:
+            return x - y;
+        case 0x3:
+            return -x - y;
+        default:
+            return 0; // never happens
+    }
+}
+
+
+float heightmapNoise(float x, float y)
+{
+    //points in the perlin space
+    float pointA = x - floor(x);
+    float pointB = y - floor(y);
+
+    // Calculate the "unit cube" that the point asked will be located in
+    int xi = (int) x & 255;
+    int yi = (int) y & 255;
+    
+    //get a semi-random number from a table for 255 included numbers
+    int testA = p[p[xi] + yi];
+    int testB = p[p[xi + 1] + yi];
+    int testC = p[p[xi] + yi + 1];
+    int testD = p[p[xi + 1] + yi + 1];
+    
+    //based on those random numbers generate a direction, in this case from 4 different directions
+    float testAh = grad(testA, pointA, pointB);
+    float testBh = grad(testB, pointA - 1, pointB);
+    float testCh = grad(testC, pointA, pointB - 1);
+    float testDh = grad(testD, pointA - 1, pointB - 1);
+    
+    
+    //Combine the directions together, 2 at the time, first on the X axis
+    double resultA = lerp(testAh, testBh, interpolate(pointA));
+    double resultB = lerp(testCh, testDh, interpolate(pointA));
+
+    //then combine those 2 values together on the y axis
+    float endResult = (float) lerp(resultA, resultB, interpolate(pointB));
+
+    return endResult;
+}
+float noise = 0;
+//float secondCutoff[8] = 0;
+//float secondValue[8] = 0;
+//float2x3 newValues;
 
 int generateConfiguration(float4 corners[8], int idx, int idz)
 {
     int configurationNumber = 0;
-    
-    uint w, h;
-    groundTex.GetDimensions(w, h);
     
     
     //loops through all corners and based on which corner we are on we increase the configuration number
@@ -35,13 +121,25 @@ int generateConfiguration(float4 corners[8], int idx, int idz)
         //{
         //    configurationNumber += pow(2, (i));
         //}        
-        float2 vec;
-        vec.x = corners[i].x + startingValue.x;
-        vec.y = corners[i].z + startingValue.z;
-        float test = groundTex[vec / frequency % w];
-        test *= height;
         
-        if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + test)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - test) / layerThickness)) > cutoff)
+       
+        //test *= height;
+        //corners[i].w = noise;
+        
+        //noise = 0;
+        //secondCutoff[i] = cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise));
+
+        
+        //if (corners[i].w > cutoff + ((corners[i].y + startingValue.y) / (groundLevel * 0.25f + noise)) || (corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness)) > cutoff)
+        //{ 
+            //corners[i].w + ((corners[i].y + startingValue.y - groundLevel - noise) / layerThickness);
+            //configurationNumber += pow(2, (i));
+        //}
+        
+        
+        
+        
+        if (corners[i].w > cutoff)
         {
             configurationNumber += pow(2, (i));
         }
@@ -99,11 +197,23 @@ float3 interpolate(float4 vertexA, float4 vertexB)
     //return interpolatedVector;
 
     
+    float t = (cutoff - vertexA.w) / (vertexB.w - vertexA.w);
+    return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
     
-    return (vertexA.xyz + vertexB.xyz) / 2;
+    
+    //return (vertexA.xyz + vertexB.xyz) / 2;
     
     //float t = (0.5f - vertexA.w) / (vertexB.w - vertexA.w);
     //return vertexA.xyz + t * (vertexB.xyz - vertexA.xyz);
+}
+
+float3 lerp(float4 vertexA, float4 vertexB)
+{
+    float test = (cutoff  - vertexA.w) / (vertexB.w - vertexA.w);
+
+    float3 testresult = vertexA.xyz + test * (vertexB.xyz - vertexA.xyz);
+
+    return testresult;
 }
 
 
@@ -113,9 +223,9 @@ void createTriangles(float4 corners[8], const int configurationNumber)
     for (int i = 0; triTable[configurationNumber][i] !=  -1; i += 3)
     {
 
-        float3 newVertexA = interpolate(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
-        float3 newVertexB = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
-        float3 newVertexC = interpolate(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]] , corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
+        float3 newVertexA = lerp(corners[edgeIndex[triTable[configurationNumber][i]][0]], corners[edgeIndex[triTable[configurationNumber][i]][1]]);
+        float3 newVertexB = lerp(corners[edgeIndex[triTable[configurationNumber][i + 1]][0]], corners[edgeIndex[triTable[configurationNumber][i + 1]][1]]);
+        float3 newVertexC = lerp(corners[edgeIndex[triTable[configurationNumber][i + 2]][0]], corners[edgeIndex[triTable[configurationNumber][i + 2]][1]]);
         
         
         TriangleStruct newTriangle1;
@@ -134,8 +244,9 @@ void createTriangles(float4 corners[8], const int configurationNumber)
 [numthreads(8,8,8)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    //check if we are not over the chunk size (its possible since we cannot dispatch 1,5f compute shader)
-    if (id.x >= pointsPerAxis - 1 || id.y >= pointsPerAxis - 1 || id.z >= pointsPerAxis - 1)
+    float1 skip = 1;
+    //check if we are not over the chunk size (its possible since we can dispatch 1,5f compute shader)
+    if (id.x >= pointsPerAxis / skip - 1 || id.y >= pointsPerAxis / skip - 1 || id.z >= pointsPerAxis / skip - 1)
     {
         return;
     }

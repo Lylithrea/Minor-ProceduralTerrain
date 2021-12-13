@@ -29,7 +29,7 @@ public static class  PlanePerlin
         }
     }
 
-    public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, float scale)
+    public static float[,] GenerateNoiseMap(float low, float high, float weight2, float agressiveness, int mapWidth, int mapHeight, float scale, int seed)
     {
         float[,] noiseMap = new float[mapWidth, mapHeight];
 
@@ -42,16 +42,130 @@ public static class  PlanePerlin
         {
             for(int x = 0; x < mapWidth; x++)
             {
-                float sampleX = x/scale;
-                float sampleY = y/scale;
 
-                float perlinValue = selfmadeNoise(sampleX, sampleY, scale);
-                noiseMap[x, y] = perlinValue;
+                float frequency = scale;
+                //height
+                float persistence = 0.5f;
+                //frequency
+                float lacunarity = 0.75f;
+                float endPerlin = 0;
+                float weight = 1;
+                float gain = 5f;
+
+
+                for (int j = 0; j < 1; j++)
+                {
+                    float sampleX = x / frequency;
+                    float sampleY = y / frequency;
+
+                    float perlinValue = selfmadeNoise(sampleX, sampleY);
+
+                    endPerlin += perlinValue * weight;
+
+                    //endPerlin = Mathf.Abs(endPerlin);
+                    //weight = endPerlin * gain;
+
+                    //endPerlin = 1 - endPerlin;
+                    //endPerlin *= endPerlin;
+                    weight *= persistence;
+                    frequency *= lacunarity;
+
+                    //weight = weight > 1.0f ? 1.0f : weight < 0f ? 0f : weight;
+
+                }
+
+                float freq = 100;
+                float sampleX2 = x / freq;
+                float sampleY2 = y / freq;
+                float cavePerlin = 1;
+
+                for (int n = 1; n < 6; n++)
+                {
+                    float factor = Mathf.Pow(2, n);
+                    cavePerlin -= selfmadeNoise(sampleX2 * factor, sampleY2 * factor) / factor;
+                }
+
+
+                float sampleX3 = x / frequency;
+                float sampleY3 = y / frequency;
+                endPerlin = 1;
+                for (int n = 1; n < 6; n++)
+                {
+                    float factor = Mathf.Pow(2, n);
+                    endPerlin -= selfmadeNoise(sampleX3 * factor, sampleY3 * factor) / factor;
+                }
+
+                //endPerlin += selfmadeNoise(x / agressiveness, y / agressiveness) * weight2;
+                //float newHigh2 = high;
+                //newHigh2 -= selfmadeNoise(x / agressiveness, y / agressiveness) * weight2;
+
+                if(y > mapHeight / 2)
+                {
+                    float delta = y - mapHeight / 2;
+                    //cavePerlin += (delta / (mapHeight / 2))/5;
+                }
+
+                float caveheight = 0.45f;
+                if (cavePerlin > caveheight)
+                {
+                    cavePerlin = 0;
+                }
+                else
+                {
+                    cavePerlin = 1;
+                }
+
+                //endPerlin = cavePerlin;
+
+                float newHigh = high;
+                float newLow = low;
+
+                float scalar = selfmadeNoise(x / 25.5f, y / 25.5f);
+                if(scalar > 0.5f)
+                {
+                    //scalar = scalar + (1 - scalar) / agressiveness;
+                }
+                else
+                {
+                    //scalar = scalar - scalar / agressiveness;
+                }
+
+                scalar *= agressiveness;
+                scalar -= agressiveness / 2;
+
+
+                if (weight2 != 0)
+                {
+                    newHigh += scalar * weight2;
+                    newLow -= scalar * weight2;
+                }
+
+                if(endPerlin < newHigh && endPerlin > newLow)
+                {
+                    float value2 = endPerlin - newLow;
+                    value2 = value2 * (1 / (newHigh - newLow));
+                    value2 *= 2;
+                    value2 -= 1;
+                    if (value2 < 0)
+                    {
+                        value2 *= -1;
+                    }
+                    endPerlin = 1 - value2;
+                }
+                else
+                {
+                    endPerlin = 0;
+                }
+                noiseMap[x, y] = cavePerlin + endPerlin;
+                //noiseMap[x, y] = selfmadeNoise(x / 50.5f, y / 50.5f);
+
             }
         }
 
         return noiseMap;
     }
+
+
 
     public static float interpolate(float value)
     {
@@ -60,25 +174,22 @@ public static class  PlanePerlin
 
     public static float grad(int hash, float x, float y)
     {
-        int h = hash & 15;                                    // Take the hashed value and take the first 4 bits of it (15 == 0b1111)
-        float u = h < 4 /* 0b1000 */ ? x : y;                // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
-
-        float v;                                             // In Ken Perlin's original implementation this was another conditional operator (?:).  I
-                                                              // expanded it for readability.
-
-        if (h < 4 /* 0b0100 */)                                // If the first and second significant bits are 0 set v = y
-            v = y;
-        else
-            v = x;
-
-        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+        switch (hash & 0x3)
+        {
+            case 0x0: return x + y;
+            case 0x1: return -x + y;
+            case 0x2: return x - y;
+            case 0x3: return -x - y;
+            default: return 0;
+        }
     }
+
     public static double lerp(double a, double b, double x)
     {
         return a + x * (b - a);
     }
 
-    public static float selfmadeNoise(float x, float y, float scale)
+    public static float selfmadeNoise(float x, float y)
     {
         //points in the perlin space
         float pointA = x - Mathf.Floor(x);
@@ -107,6 +218,7 @@ public static class  PlanePerlin
         //then combine those 2 values together on the y axis
         float endResult= (float)lerp(resultA, resultB, interpolate(pointB));
 
+        endResult = (endResult + 1) / 2;
         return endResult;
     }
 
