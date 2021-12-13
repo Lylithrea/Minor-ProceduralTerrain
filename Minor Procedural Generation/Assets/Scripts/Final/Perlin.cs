@@ -19,7 +19,7 @@ namespace Noise
         public static Vector4[] noiseGenerator(int points)
         {
             //in the future this might be updated dynamicly because of vertices points per chunk
-            int currentPoints = pointsPerAxis * points;
+            int currentPoints = pointsPerAxis * points ;
             float threadsPerAxis = (float)currentPoints / (float)numThreads;
             int dispatchAmount = Mathf.CeilToInt(threadsPerAxis);
 

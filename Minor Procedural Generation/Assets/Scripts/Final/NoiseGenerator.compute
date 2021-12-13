@@ -287,9 +287,10 @@ float worms(float x, float y, float z)
     
     float gh = 350;
  
-    float mh = 50;
+    float mh = 200;
     float ch = 300;
     
+    gh -= octaves * 20;
     //1 = air!! -------------------------------------------------------
 
     
@@ -298,25 +299,27 @@ float worms(float x, float y, float z)
 
     topheight += noise * mh;
     float caveheight2 = ch + noise * mh;
-    
+
     if (currentHeight > caveheight2)
     {
-        //caves
+    //caves
         if (caveheight2 > gh)
         {
-            endResult -= (1 - (caveheight2 - currentHeight) / (caveheight2 - ch) * noise);
+            //endResult -= (1 - (caveheight2 - currentHeight) / (caveheight2 - ch) * noise);
         }
         else
         {
-            endResult -= (1 - (gh - currentHeight) / (gh - ch) * noise);
+            //endResult -= (1 - (gh - currentHeight) / (gh - ch) * noise);
         }
         
     }
-    clamp(endResult, 0, 1);
+    //clamp(endResult, 0, 1);
+    endResult = 0;
     if (currentHeight > topheight)
     {
         //mountains
-        endResult += (1 - (topheight - currentHeight) / (topheight - gh));
+        endResult += ( (currentHeight - topheight) / (topheight - gh));
+        //endResult -= caveResult * (1 - endResult);
     }
     
     return endResult;
@@ -372,24 +375,59 @@ float worms(float x, float y, float z)
 [numthreads(numThreads, numThreads, numThreads)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= pointsPerAxis || id.y >= pointsPerAxis || id.z >= pointsPerAxis)
+    
+        
+    float1 skip = 1;
+    
+    if (id.x >= pointsPerAxis / skip || id.y >= pointsPerAxis / skip || id.z >= pointsPerAxis / skip)
     {
         return;
     }
-    //generate a value based on position and add it to the buffer, together with the postion
-    float3 newPos = startingValue;
-    
-    newPos.x = (startingValue.x + (id.x * size));
-    newPos.y = (startingValue.y + (id.y * size));
-    newPos.z = (startingValue.z + (id.z * size));
+    //row of smaller squares
+    if (id.x >= pointsPerAxis / skip - 2 || id.y >= pointsPerAxis / skip - 2 || id.z >= pointsPerAxis / skip - 2)
+    {
+        float3 newPos = startingValue;
+
+        newPos.x = (startingValue.x + (id.x * size ));
+        newPos.y = (startingValue.y + (id.y * size ));
+        newPos.z = (startingValue.z + (id.z * size ));
     
 
     //worms(id.x, id.y, id.z);
-    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, worms(newPos.x, newPos.y, newPos.z)));
+        vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size , id.y * size , id.z * size , worms(newPos.x, newPos.y, newPos.z)));
+    }
+    if (id.x < 2 || id.y < 2 || id.z < 2)
+    {
+        float3 newPos = startingValue;
+
+        newPos.x = (startingValue.x + (id.x * size));
+        newPos.y = (startingValue.y + (id.y * size));
+        newPos.z = (startingValue.z + (id.z * size));
+    
+
+    //worms(id.x, id.y, id.z);
+        vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, worms(newPos.x, newPos.y, newPos.z)));
+    }
+    else
+    {
+
+    //generate a value based on position and add it to the buffer, together with the postion
+        float3 newPos = startingValue;
+
+    
+
+        newPos.x = (startingValue.x + (id.x * size * skip));
+        newPos.y = (startingValue.y + (id.y * size * skip));
+        newPos.z = (startingValue.z + (id.z * size * skip));
+    
+
+    //worms(id.x, id.y, id.z);
+        vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size * skip, id.y * size * skip, id.z * size * skip, worms(newPos.x, newPos.y, newPos.z)));
+   
     
     
     //vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size, id.y * size, id.z * size, 0.5f));
-    
+    }
 
         
 

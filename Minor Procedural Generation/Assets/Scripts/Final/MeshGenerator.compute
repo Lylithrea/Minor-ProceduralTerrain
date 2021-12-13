@@ -244,8 +244,9 @@ void createTriangles(float4 corners[8], const int configurationNumber)
 [numthreads(8,8,8)]
 void MarchingCubes(uint3 id : SV_DispatchThreadID)
 {
-    //check if we are not over the chunk size (its possible since we cannot dispatch 1,5f compute shader)
-    if (id.x >= pointsPerAxis - 1 || id.y >= pointsPerAxis - 1 || id.z >= pointsPerAxis - 1)
+    float1 skip = 1;
+    //check if we are not over the chunk size (its possible since we can dispatch 1,5f compute shader)
+    if (id.x >= pointsPerAxis / skip - 1 || id.y >= pointsPerAxis / skip - 1 || id.z >= pointsPerAxis / skip - 1)
     {
         return;
     }

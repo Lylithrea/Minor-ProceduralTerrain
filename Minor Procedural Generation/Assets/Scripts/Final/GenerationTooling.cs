@@ -34,7 +34,7 @@ public class GenerationTooling : MonoBehaviour
     public int levelOfDetail;
     public int levelOfDetailRadius;
 
-    Vector3[] chunkVertexPositions;
+
 
     //Contains all the currently loaded chunks
     public Dictionary<Vector3, GameObject> allChunks = new Dictionary<Vector3, GameObject>();
@@ -65,25 +65,6 @@ public class GenerationTooling : MonoBehaviour
 
     public Triangle[] triangles = new Triangle[1];
 
-
-    /// <summary>
-    /// Calculates all vertex points within a chunk at the start, since every vertex position is the same within chunk.
-    /// </summary>
-    public void GainChunkPositions()
-    {
-        //sets all the chunk positions since its always the same in each chunk
-        int chunkSize = pointsPerAxis * pointsPerAxis * pointsPerAxis;
-
-        chunkVertexPositions = new Vector3[chunkSize];
-        for (int i = 0; i < chunkSize; i++) //triple foreach loop condensed into 1 for loop
-        {
-            float r = i % pointsPerAxis;
-            float h = Mathf.FloorToInt((i / pointsPerAxis) % pointsPerAxis);
-            float c = Mathf.FloorToInt(i / (pointsPerAxis * pointsPerAxis));
-            chunkVertexPositions[i] = new Vector3(r * size, h * size, c * size);
-        }
-
-    }
 
 
 
