@@ -9,6 +9,8 @@ using System.Threading;
 
 public class Generation : GenerationTooling
 {
+    List<Vector3> tempPos = new List<Vector3>();
+
 
     void Start()
     {
@@ -41,6 +43,7 @@ public class Generation : GenerationTooling
         }
     }
 
+
     //update the chunks based on player position
     private void UpdateChunks()
     {
@@ -55,6 +58,10 @@ public class Generation : GenerationTooling
 
         chunkQueue.Clear();
         currentPlayerChunks.Clear();
+
+
+
+
 
         for ( int x = minX; x < maxX; x++)
         {
@@ -98,25 +105,6 @@ public class Generation : GenerationTooling
         spawningChunksRunning = false;
     }
 
-
-
-    public void UpdateMultipleMeshes(Vector3 startPos, Vector3 endPos, int detail)
-    {
-        for (float i = startPos.x; i <= endPos.x; i++)
-        {
-            for (float j = startPos.y; j <= endPos.y; j++)
-            {
-                for (float k = startPos.z; k <= endPos.z; k++)
-                {
-                    Chunks newchunk;
-                    newchunk.chunk = allChunks[new Vector3(i, j, k)];
-                    newchunk.points = detail;
-                    updateQueue.Enqueue(newchunk);
-                    //UpdateMesh(allChunks[new Vector3(i,j,k)], 1);
-                }
-            }
-        }
-    }
 
 
     public void CreateMultipleChunks(Vector3 startPos, Vector3 endPos)
@@ -254,6 +242,71 @@ public class Generation : GenerationTooling
     /// </summary>
     private void InitializeStartingChunks()
     {
+        //float r = 0;
+        //float angle;
+        tempPos.Clear();
+        int angleIncrease = 25;
+        int tempRadius = 5;
+
+        for (int r = 0; r < tempRadius; r++)
+        {
+            if (r == 0)
+            {
+                float carX = 0;
+                float carY = 0;
+                //tempPos.Add(new Vector3(carX, 0, carY));
+                //Debug.Log("Cartesian position: (" + carX + "," + carY + ")");
+            }
+            else
+            {
+                for (int angle = 0; angle <= 360; angle += angleIncrease / r)
+                {
+                    //convert to cartesian coordinate system
+                    float carX = r * Mathf.Cos((angle * Mathf.PI)/180);
+                    float carY = r * Mathf.Sin((angle * Mathf.PI) / 180);
+                    //convert to chunk size
+                    carX *= pointsPerAxis * size;
+                    carY *= pointsPerAxis * size;
+
+
+
+/*                 carX = Mathf.Floor(carX / (pointsPerAxis * size));
+                    carY = Mathf.Floor(carY / (pointsPerAxis * size));
+                    carX *= pointsPerAxis * size;
+                    carY *= pointsPerAxis * size;*/
+                    //tempPos.Add(new Vector3(carX, 0, carY));
+                    //Debug.Log(angle);
+                    //Debug.Log("Radius: " + r + " Angle: " + angle + " x: " +Mathf.Cos((angle * Mathf.PI) / 180) + " y: " + Mathf.Sin((angle * Mathf.PI) / 180)  + " Cartesian position: (" + carX + "," + carY + ")");
+                }
+            }
+        }
+
+
+        float angle2 = 0;
+
+        for (float r = 0; r < tempRadius; r +=  2 * Mathf.PI * 0.0025f  )
+        {
+
+            //convert to cartesian coordinate system
+            float carX2 = r * Mathf.Cos((angle2 * Mathf.PI) / 180);
+            float carY2 = r * Mathf.Sin((angle2 * Mathf.PI) / 180);
+            //convert to chunk size
+            carX2 *= pointsPerAxis * size;
+            carY2 *= pointsPerAxis * size;
+
+
+
+            carX2 = Mathf.Floor(carX2 / (pointsPerAxis * size));
+            carY2 = Mathf.Floor(carY2 / (pointsPerAxis * size));
+            carX2 *= pointsPerAxis * size;
+            carY2 *= pointsPerAxis * size;
+
+            tempPos.Add(new Vector3(carX2, 0, carY2));
+            angle2 += angleIncrease /(1+ r);
+        }
+
+
+
         //square radius
         int chunkSize = (radius + radius - 1);
         int chunkRadius = chunkSize * chunkSize * chunkSize;
@@ -305,5 +358,17 @@ public class Generation : GenerationTooling
         }
     }
 
+
+    private void OnDrawGizmos()
+    {
+        float c = 0;
+        foreach(Vector3 pos in tempPos)
+        {
+
+            Gizmos.color = new Color(c, c, c, 1);
+            Gizmos.DrawSphere(pos, 5f);
+            c += 0.02f;
+        }
+    }
 
 }

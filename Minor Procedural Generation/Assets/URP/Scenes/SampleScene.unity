@@ -1082,7 +1082,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &820136375
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1966,8 +1966,8 @@ MonoBehaviour:
   radius: 5
   cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
-  pointsPerAxis: 20
-  size: 1
+  pointsPerAxis: 24
+  size: 2
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []
