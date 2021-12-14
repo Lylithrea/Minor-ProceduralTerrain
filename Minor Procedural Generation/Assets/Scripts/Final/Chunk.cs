@@ -15,6 +15,8 @@ public class Chunk : MonoBehaviour
     MeshCollider meshCollider;
 
     public Generation generator;
+    public Dictionary<Vector3, float> values = new Dictionary<Vector3, float>();
+
 
     public void DestroyOrDisable()
     {
@@ -73,7 +75,7 @@ public class Chunk : MonoBehaviour
             meshCollider.enabled = false;
             meshCollider.enabled = true;
         }
-
+        meshCollider.convex = true;
         meshRenderer.material = mat;
     }
 
@@ -96,10 +98,12 @@ public class Chunk : MonoBehaviour
             //Array.Clear(generator.triangles, 0, generator.triangles.Length);
             if (generator.currentChunk == newPosition)
             {
+                //setValues(Perlin.noiseGenerator(1));
                 generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
             }
             else
             {
+                //setValues(Perlin.noiseGenerator(1));
                 generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
             }
 
@@ -111,6 +115,32 @@ public class Chunk : MonoBehaviour
         }
     }
 
+    public void updateMarchingCubes()
+    {
+        //generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+        updateMesh();
+    }
+
+    private void setValues(Vector4[] val)
+    {
+        values.Clear();
+        foreach(Vector4 value in val)
+        {
+            values[new Vector3(value.x, value.y, value.z)] = value.z;
+        }
+    }
+
+    private Vector4[] getValues()
+    {
+        Vector4[] points = new Vector4[values.Count];
+        int count = 0;
+        foreach(KeyValuePair<Vector3, float> val in values)
+        {
+            points[count] = new Vector4(val.Key.x, val.Key.y, val.Key.z, val.Value);
+            count++;
+        }
+        return points;
+    }
 
     public void updateVertexDensity(int density)
     {
@@ -135,11 +165,13 @@ public class Chunk : MonoBehaviour
 
     public void SetMesh()
     {
-        MeshRenderer meshRenderer = setupMeshRenderer();
-        MeshFilter meshFilter = setupMeshFilter();
+         meshRenderer = setupMeshRenderer();
+         meshFilter = setupMeshFilter();
+         meshCollider = setupMeshCollider();
 
-        Mesh mesh = new Mesh();
+        mesh = new Mesh();
         meshFilter.mesh = mesh;
+        //meshFilter.sharedMesh = mesh;
 
         mesh.vertices = generator.createVertices();
         mesh.triangles = generator.createTriangles(mesh.vertices.Length);
@@ -149,8 +181,68 @@ public class Chunk : MonoBehaviour
         mesh.RecalculateTangents();
 
 
+        if (mesh == null)
+        {
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            meshFilter.sharedMesh = mesh;
+        }
+
+        if (meshCollider.sharedMesh == null)
+        {
+            meshCollider.sharedMesh = mesh;
+        }
+        // force update
+        meshCollider.enabled = false;
+        meshCollider.enabled = true;
+
         meshRenderer.material = generator.terrainMaterial;
     }
+
+    private void updateMesh()
+    {
+
+        //meshFilter.sharedMesh = mesh;
+
+        mesh.vertices = generator.createVertices();
+        mesh.triangles = generator.createTriangles(mesh.vertices.Length);
+
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+
+
+        if (mesh == null)
+        {
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            meshFilter.sharedMesh = mesh;
+        }
+
+        if (meshCollider.sharedMesh == null)
+        {
+            meshCollider.sharedMesh = mesh;
+        }
+        // force update
+        meshCollider.enabled = false;
+        meshCollider.enabled = true;
+
+    }
+
+
+    /// <summary>
+    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
+    /// </summary>
+    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
+    /// <returns></returns>
+    private MeshCollider setupMeshCollider()
+    {
+        if (gameObject.GetComponent<MeshCollider>() == null)
+        {
+            gameObject.AddComponent<MeshCollider>();
+        }
+        return gameObject.GetComponent<MeshCollider>();
+    }
+
+
 
     /// <summary>
     /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
