@@ -59,11 +59,49 @@ public class Generation : GenerationTooling
         chunkQueue.Clear();
         currentPlayerChunks.Clear();
 
+        //float r = 0;
+        //float angle;
+        tempPos.Clear();
+        int angleIncrease = 25;
+
+        float angle = 0;
+
+        for (float r = 0; r < radius; r += 2 * Mathf.PI * 0.0025f)
+        {
+
+            //convert to cartesian coordinate system
+            float carX2 = r * Mathf.Cos((angle * Mathf.PI) / 180);
+            float carY2 = r * Mathf.Sin((angle * Mathf.PI) / 180);
+            //convert to chunk size
+            carX2 *= pointsPerAxis * size;
+            carY2 *= pointsPerAxis * size;
+
+            carX2 = Mathf.Floor(carX2 / (pointsPerAxis * size));
+            carY2 = Mathf.Floor(carY2 / (pointsPerAxis * size));
+            //carX2 *= pointsPerAxis * size;
+            //carY2 *= pointsPerAxis * size;
+
+
+            for(int i = radius/2*-1; i < radius / 2; i++)
+            {
+                Vector3 newPos = new Vector3(currentChunk.x + carX2, currentChunk.y + i, currentChunk.z + carY2);
+                if (!allChunks.ContainsKey(newPos))
+                {
+                    //Debug.Log("Enqueuing chunk!");
+                    chunkQueue.Enqueue(newPos);
+
+                    currentPlayerChunks.Add(newPos);
+                }
+            }
 
 
 
+            angle += angleIncrease / (1 + r);
+        }
 
-        for ( int x = minX; x < maxX; x++)
+
+
+/*        for ( int x = minX; x < maxX; x++)
         {
             for (int y = minY; y < maxY; y++)
             {
@@ -77,7 +115,7 @@ public class Generation : GenerationTooling
                     }
                 }
             }
-        }
+        }*/
         if (!spawningChunksRunning)
         {
             StartCoroutine(SpawnChunks());
@@ -247,40 +285,6 @@ public class Generation : GenerationTooling
         tempPos.Clear();
         int angleIncrease = 25;
         int tempRadius = 5;
-
-        for (int r = 0; r < tempRadius; r++)
-        {
-            if (r == 0)
-            {
-                float carX = 0;
-                float carY = 0;
-                //tempPos.Add(new Vector3(carX, 0, carY));
-                //Debug.Log("Cartesian position: (" + carX + "," + carY + ")");
-            }
-            else
-            {
-                for (int angle = 0; angle <= 360; angle += angleIncrease / r)
-                {
-                    //convert to cartesian coordinate system
-                    float carX = r * Mathf.Cos((angle * Mathf.PI)/180);
-                    float carY = r * Mathf.Sin((angle * Mathf.PI) / 180);
-                    //convert to chunk size
-                    carX *= pointsPerAxis * size;
-                    carY *= pointsPerAxis * size;
-
-
-
-/*                 carX = Mathf.Floor(carX / (pointsPerAxis * size));
-                    carY = Mathf.Floor(carY / (pointsPerAxis * size));
-                    carX *= pointsPerAxis * size;
-                    carY *= pointsPerAxis * size;*/
-                    //tempPos.Add(new Vector3(carX, 0, carY));
-                    //Debug.Log(angle);
-                    //Debug.Log("Radius: " + r + " Angle: " + angle + " x: " +Mathf.Cos((angle * Mathf.PI) / 180) + " y: " + Mathf.Sin((angle * Mathf.PI) / 180)  + " Cartesian position: (" + carX + "," + carY + ")");
-                }
-            }
-        }
-
 
         float angle2 = 0;
 
