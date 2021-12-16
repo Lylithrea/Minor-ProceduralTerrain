@@ -1805,7 +1805,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1687258581}
   m_LocalRotation: {x: 0.16142306, y: 0.37908885, z: -0.067334265, w: 0.9086806}
-  m_LocalPosition: {x: 1400, y: 375, z: 1400}
+  m_LocalPosition: {x: 1400, y: 414, z: 1400}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 411149849}
@@ -2048,8 +2048,8 @@ MonoBehaviour:
   radius: 5
   cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
-  pointsPerAxis: 10
-  size: 1
+  pointsPerAxis: 20
+  size: 2
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []

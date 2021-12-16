@@ -47,23 +47,11 @@ public class Generation : GenerationTooling
     //update the chunks based on player position
     private void UpdateChunks()
     {
-        int minX = (int)currentChunk.x - radius + 1;
-        int maxX = (int)currentChunk.x + radius;
-
-        int minY = (int)currentChunk.y - radius + 1;
-        int maxY = (int)currentChunk.y + radius;
-
-        int minZ = (int)currentChunk.z - radius + 1;
-        int maxZ = (int)currentChunk.z + radius;
-
         chunkQueue.Clear();
         currentPlayerChunks.Clear();
 
-        //float r = 0;
-        //float angle;
-        tempPos.Clear();
-        int angleIncrease = 25;
 
+        int angleIncrease = 25;
         float angle = 0;
 
         for (float r = 0; r < radius; r += 2 * Mathf.PI * 0.0025f)
@@ -72,53 +60,31 @@ public class Generation : GenerationTooling
             //convert to cartesian coordinate system
             float carX2 = r * Mathf.Cos((angle * Mathf.PI) / 180);
             float carY2 = r * Mathf.Sin((angle * Mathf.PI) / 180);
+
             //convert to chunk size
             carX2 *= pointsPerAxis * size;
             carY2 *= pointsPerAxis * size;
 
+            //convert the points to chunk positions (square spacing)
             carX2 = Mathf.Floor(carX2 / (pointsPerAxis * size));
             carY2 = Mathf.Floor(carY2 / (pointsPerAxis * size));
-            //carX2 *= pointsPerAxis * size;
-            //carY2 *= pointsPerAxis * size;
 
-
-            for(int i = radius/2*-1; i < radius / 2; i++)
+            for(int i = radius*-1; i < radius; i++)
             {
                 Vector3 newPos = new Vector3(currentChunk.x + carX2, currentChunk.y + i, currentChunk.z + carY2);
-                if (!allChunks.ContainsKey(newPos))
+                //makes sure we dont add extra chunks that are not needed in the queue
+                if (!allChunks.ContainsKey(newPos) && !currentPlayerChunks.Contains(newPos))
                 {
-                    //Debug.Log("Enqueuing chunk!");
                     chunkQueue.Enqueue(newPos);
-
                     currentPlayerChunks.Add(newPos);
                 }
             }
-
-
-
+            //increase the angle, by an decreasing amount, so the spacing somewhat stays the same
             angle += angleIncrease / (1 + r);
         }
-
-
-
-/*        for ( int x = minX; x < maxX; x++)
-        {
-            for (int y = minY; y < maxY; y++)
-            {
-                for (int z = minZ; z < maxZ; z++)
-                {
-                    if(!allChunks.ContainsKey(new Vector3(x, y, z)))
-                    {
-                        chunkQueue.Enqueue(new Vector3(x, y, z));
-
-                        currentPlayerChunks.Add(new Vector3(x, y, z));
-                    }
-                }
-            }
-        }*/
         if (!spawningChunksRunning)
         {
-            StartCoroutine(SpawnChunks());
+            SpawnChunksTest();
         }
     }
 
@@ -143,78 +109,27 @@ public class Generation : GenerationTooling
         spawningChunksRunning = false;
     }
 
-
-
-    public void CreateMultipleChunks(Vector3 startPos, Vector3 endPos)
+    private async void SpawnChunksTest()
     {
-        //update vertex count
-        if (levelOfDetailRadius > 0)
+        spawningChunksRunning = true;
+        while (chunkQueue.Count > 0)
         {
-            int levelOfDetailSize = (levelOfDetailRadius + levelOfDetailRadius - 1);
-            int chunkChecks = levelOfDetailSize * levelOfDetailSize * levelOfDetailSize;
-            for (int i = 0; i < chunkChecks; i++)
+            Vector3 chunkPos = chunkQueue.Dequeue();
+            if (reusableChunkQueue.Count > 0)
             {
-                float r = i % levelOfDetailSize;
-                float h = Mathf.FloorToInt((i / levelOfDetailSize) % levelOfDetailSize);
-                float c = Mathf.FloorToInt(i / (levelOfDetailSize * levelOfDetailSize));
-
-                Vector3 checkChunkPos = currentChunk;
-                checkChunkPos.x = checkChunkPos.x - levelOfDetailRadius + 1 + r;
-                checkChunkPos.y = checkChunkPos.y - levelOfDetailRadius + 1 + h;
-                checkChunkPos.z = checkChunkPos.z - levelOfDetailRadius + 1 + c;
-
-                //Debug.Log("Chunk pos: " + checkChunkPos);
-
-                if (allChunks.ContainsKey(checkChunkPos))
-                {
-                    Chunks newchunk;
-                    newchunk.chunk = allChunks[checkChunkPos];
-                    //newchunk.points = levelOfDetail + 1;
-                    newchunk.points = 1;
-                    updateQueue.Enqueue(newchunk);
-                    //UpdateMesh(allChunks[checkChunkPos], levelOfDetail + 1);
-                }
+                GameObject chunk = reusableChunkQueue.Dequeue();
+                chunk.GetComponent<Chunk>().updatePosition(chunkPos);
             }
-
-        }
-
-
-        for(float i = startPos.x; i <= endPos.x; i++)
-        {
-            for (float j = startPos.y; j <= endPos.y; j++)
+            else
             {
-                for (float k = startPos.z; k <= endPos.z; k++)
-                {
-                    //CreateChunk(new Vector3(i , j , k ));
-                    chunkQueue.Enqueue(new Vector3(i, j, k));
-                }
+                CreateChunk(chunkPos);
             }
+            await System.Threading.Tasks.Task.Yield();
         }
-        if (!spawningChunksRunning)
-        {
-            StartCoroutine(SpawnChunks());
-        }
+        StartCoroutine(UpdateChunkMeshes());
+        spawningChunksRunning = false;
     }
 
-    public void DestroyMultipleChunks(Vector3 startPos, Vector3 endPos)
-    {
-        for (float i = startPos.x; i <= endPos.x; i++)
-        {
-            for (float j = startPos.y; j <= endPos.y; j++)
-            {
-                for (float k = startPos.z; k <= endPos.z; k++)
-                {
-                    //DestroyChunk(new Vector3(i, j , k));
-                    destroyChunkQueue.Enqueue(new Vector3(i, j, k));
-                    //reusableChunkQueue.Enqueue(allChunks[new Vector3(i, j, k)]);
-                }
-            }
-        }
-        if (!destroyingChunksRunning)
-        {
-            StartCoroutine(DestroyChunks());
-        }
-    }
 
 
     /// <summary>
@@ -280,62 +195,39 @@ public class Generation : GenerationTooling
     /// </summary>
     private void InitializeStartingChunks()
     {
-        //float r = 0;
-        //float angle;
-        tempPos.Clear();
+        chunkQueue.Clear();
+        currentPlayerChunks.Clear();
+
         int angleIncrease = 25;
-        int tempRadius = 5;
+        float angle = 0;
 
-        float angle2 = 0;
-
-        for (float r = 0; r < tempRadius; r +=  2 * Mathf.PI * 0.0025f  )
+        for (float r = 0; r < radius; r += 2 * Mathf.PI * 0.0025f)
         {
 
             //convert to cartesian coordinate system
-            float carX2 = r * Mathf.Cos((angle2 * Mathf.PI) / 180);
-            float carY2 = r * Mathf.Sin((angle2 * Mathf.PI) / 180);
+            float carX2 = r * Mathf.Cos((angle * Mathf.PI) / 180);
+            float carY2 = r * Mathf.Sin((angle * Mathf.PI) / 180);
+
             //convert to chunk size
             carX2 *= pointsPerAxis * size;
             carY2 *= pointsPerAxis * size;
 
-
-
+            //convert the points to chunk positions (square spacing)
             carX2 = Mathf.Floor(carX2 / (pointsPerAxis * size));
             carY2 = Mathf.Floor(carY2 / (pointsPerAxis * size));
-            carX2 *= pointsPerAxis * size;
-            carY2 *= pointsPerAxis * size;
 
-            tempPos.Add(new Vector3(carX2, 0, carY2));
-            angle2 += angleIncrease /(1+ r);
-        }
-
-
-
-        //square radius
-        int chunkSize = (radius + radius - 1);
-        int chunkRadius = chunkSize * chunkSize * chunkSize;
-
-        //spawn chunks based on players position
-        //the position of a chunk is at the 0,0,0 position of the chunk (thus not the middle of the chunk)
-        Vector3 chunkpos = new Vector3();
-        chunkpos.x = Mathf.Floor(player.transform.position.x / (pointsPerAxis * size));
-        chunkpos.y = Mathf.Floor(player.transform.position.y / (pointsPerAxis * size));
-        chunkpos.z = Mathf.Floor(player.transform.position.z / (pointsPerAxis * size));
-        currentChunk = chunkpos;
-
-        for (int i = 0; i < chunkRadius; i++)
-        {
-            float r = i % chunkSize;
-            float h = Mathf.FloorToInt((i / chunkSize) % chunkSize);
-            float c = Mathf.FloorToInt(i / (chunkSize * chunkSize));
-
-
-            Vector3 newpos = new Vector3();
-            newpos.x = (chunkpos.x - radius + 1 + r);
-            newpos.y = (chunkpos.y - radius + 1 + h);
-            newpos.z = (chunkpos.z - radius + 1 + c);
-
-            CreateChunk(newpos);
+            for (int i = radius * -1; i < radius; i++)
+            {
+                Vector3 newPos = new Vector3(currentChunk.x + carX2, currentChunk.y + i, currentChunk.z + carY2);
+                //makes sure we dont add extra chunks that are not needed in the queue
+                if (!allChunks.ContainsKey(newPos) && !currentPlayerChunks.Contains(newPos))
+                {
+                    chunkQueue.Enqueue(newPos);
+                    currentPlayerChunks.Add(newPos);
+                }
+            }
+            //increase the angle, by an decreasing amount, so the spacing somewhat stays the same
+            angle += angleIncrease / (1 + r);
         }
 
     }
@@ -362,17 +254,5 @@ public class Generation : GenerationTooling
         }
     }
 
-
-    private void OnDrawGizmos()
-    {
-        float c = 0;
-        foreach(Vector3 pos in tempPos)
-        {
-
-            Gizmos.color = new Color(c, c, c, 1);
-            Gizmos.DrawSphere(pos, 5f);
-            c += 0.02f;
-        }
-    }
 
 }

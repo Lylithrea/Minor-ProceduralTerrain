@@ -202,6 +202,7 @@ public class Chunk : MonoBehaviour
     {
 
         //meshFilter.sharedMesh = mesh;
+        mesh.Clear();
 
         mesh.vertices = generator.createVertices();
         mesh.triangles = generator.createTriangles(mesh.vertices.Length);
