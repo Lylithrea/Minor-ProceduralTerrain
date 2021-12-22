@@ -2231,12 +2231,12 @@ MonoBehaviour:
   groundLevel: 350
   persistence: 0.74
   lacunarity: 0.66
-  octaves: 4
+  octaves: 1
   radius: 5
-  cutoff: 0.48
+  cutoff: 0.5
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 1
+  size: 5
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []

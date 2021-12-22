@@ -134,7 +134,7 @@ float selfmadeperlin(float x, float y, float z)
     float resultG = lerp(resultE, resultF, interZ);
     
     
-    
+    //most values are between 0.25f and 0.75, this formula tries to normalize it to 0 to 1
     float result = (((resultG + 1) / 2) - 0.25f) * 2;
     return result;
 
@@ -167,9 +167,9 @@ float worms(float x, float y, float z)
     float baseZ = z;
     
     
-    float caveX = x / 100;
-    float caveY = y / 100;
-    float caveZ = z / 100;
+    float caveX = x / 150;
+    float caveY = y / 150;
+    float caveZ = z / 150;
     
 
     x /= noiseScale;
@@ -272,15 +272,21 @@ float worms(float x, float y, float z)
     float weight = 1;
     float testScale = 150;
         
+    float maxValue = 0;
+    
     for (int j = 0; j < octaves; j++)
     {
         float test2 = heightmapNoise(baseX / testScale , baseZ / testScale );
         noise += (test2 * weight);
+        maxValue += (0.9f * weight);
         testScale *= lacunarity;
         weight *= persistence;
     }
         
-    noise = (noise / (persistence * octaves));
+    //noise = (noise / ( octaves * persistence));
+    //noise = noise / maxValue;
+    //noise = noise * (maxValue - noise);
+    noise = noise / maxValue;
     
     float endResult = caveResult;
     //endResult += (currentHeight - 350 - noise) / 100;
@@ -290,7 +296,7 @@ float worms(float x, float y, float z)
     float mh = 500;
     float ch = 300;
     
-    gh -= octaves * 20;
+    //gh -= octaves * 20;
     //1 = air!! -------------------------------------------------------
 
     
@@ -299,7 +305,13 @@ float worms(float x, float y, float z)
 
     
     
-    topheight += noise * mh;
+    //topheight += noise * mh;
+    
+    float exp = 4;
+    
+    topheight += (pow((noise * 10), exp)) * (((mh) / 100) / (pow(10, (exp - 2))));
+    
+    
     float caveheight2 = ch + noise * mh;
     float caveDelta = 10;
 
@@ -324,31 +336,17 @@ float worms(float x, float y, float z)
         }
         
     }
-    //clamp(endResult, 0, 1);
-    //endResult = 0;
-    //clamp(endResult, 0, 1);
     float mountainSmoothness = 5;
-    //endResult = 0;
+
     if (currentHeight > topheight)
     {
-        //mountains
-        //endResult += ( (currentHeight - topheight) / (topheight - gh));
-        //endResult -= caveResult * (1 - endResult);
-        //endResult = 1;
-
         endResult += (1 - (topheight + mountainSmoothness - currentHeight) / mountainSmoothness);
         float value = selfmadeperlin(baseX / 5.5f, baseY / 10.5f, baseZ / 5.5f);
         float value2 = selfmadeperlin(baseX / 9.5f, baseY / 37.5f, baseZ / 9.5f);
         endResult -= (value / 2 + value2) / 3;
-
-        //endResult -= value * 2;
-        //endResult = 1;
     }
     clamp(endResult, 0, 1);
-    
 
-    
-    
     return endResult;
     
     
