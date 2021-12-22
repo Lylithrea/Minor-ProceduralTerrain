@@ -63,8 +63,6 @@ public class GenerationTooling : MonoBehaviour
         public int points;
     }
 
-    public Triangle[] triangles = new Triangle[1];
-
 
 
 
@@ -74,6 +72,7 @@ public class GenerationTooling : MonoBehaviour
     public void setupValues()
     {
         noiseShader.SetFloat("chunkSize", pointsPerAxis * pointsPerAxis * pointsPerAxis);
+        noiseShader.SetInt("pointsPerAxis", pointsPerAxis);
         noiseShader.SetFloat("size", size);
         noiseShader.SetFloat("noiseScale", scale);
         noiseShader.SetFloat("repeat", 9);
@@ -96,48 +95,12 @@ public class GenerationTooling : MonoBehaviour
         MarchingCube.numThreads = numThreads;
         MarchingCube.marchingCubeShader = marchingCubeShader;
 
+
+        Perlin.CreateBuffers();
+        MarchingCube.CreateBuffers();
     }
 
 
 
-    /// <summary>
-    /// Creates a Vector3 array from a triangles array, so it can be used for a mesh.
-    /// </summary>
-    /// <returns>A vector3 array with vertex positions in correct order for triangles.</returns>
-    public Vector3[] createVertices()
-    {
-        Vector3[] vertices = new Vector3[triangles.Length * 3];
-        for (int i = 0; i < triangles.Length; i++)
-        {
-            vertices[i * 3 + 0] = triangles[i].VertexA;
-            vertices[i * 3 + 1] = triangles[i].VertexB;
-            vertices[i * 3 + 2] = triangles[i].VertexC;
-        }
-        return vertices;
-    }
 
-    /// <summary>
-    /// Generates a int array going from 0 to triangle amount. This list is orderer since all vertices are already in correct order in the triangle array.
-    /// </summary>
-    /// <param name="amount">The amount of triangles are put into the mesh.</param>
-    /// <returns>An int array going from 0 to the amount.</returns>
-    public int[] createTriangles(int amount)
-    {
-        int[] newTriangles = new int[amount];
-        for (int i = 0; i < newTriangles.Length; i++)
-        {
-            newTriangles[i] = i;
-        }
-        return newTriangles;
-    }
-
-    /// <summary>
-    /// Struct for the triangles, since compute shaders run a synchronious we need to give back a list of triangles based of 3 positions.
-    /// </summary>
-    public struct Triangle
-    {
-        public Vector3 VertexA;
-        public Vector3 VertexB;
-        public Vector3 VertexC;
-    };
 }

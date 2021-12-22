@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using MarchCubes;
 using Noise;
+using System;
 
-public class Chunk : MonoBehaviour
+public class Chunk : ChunkHelper
 {
 
     [HideInInspector]
@@ -18,66 +19,35 @@ public class Chunk : MonoBehaviour
     public Dictionary<Vector3, float> values = new Dictionary<Vector3, float>();
 
 
-    public void DestroyOrDisable()
+
+
+    public void Setup()
     {
-        if (Application.isPlaying)
-        {
-            mesh.Clear();
-            gameObject.SetActive(false);
-        }
-        else
-        {
-            DestroyImmediate(gameObject, false);
-        }
+        generator.noiseShader.SetVector("startingValue", this.gameObject.transform.position);
+        generator.marchingCubeShader.SetVector("startingValue", this.gameObject.transform.position);
+
+        Array.Clear(triangles, 0, triangles.Length);
+
+        //SetTriangles();
+        triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+
+        meshRenderer = setupMeshRenderer();
+        meshFilter = setupMeshFilter();
+        meshCollider = setupMeshCollider();
+
+        SetMesh();
     }
 
-    // Add components/get references in case lost (references can be lost when working in the editor)
-    public void SetUp(Material mat, bool generateCollider)
+    private async void SetTriangles()
     {
-        meshFilter = GetComponent<MeshFilter>();
-        meshRenderer = GetComponent<MeshRenderer>();
-        meshCollider = GetComponent<MeshCollider>();
-
-        if (meshFilter == null)
-        {
-            meshFilter = gameObject.AddComponent<MeshFilter>();
-        }
-
-        if (meshRenderer == null)
-        {
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-        }
-
-        if (meshCollider == null && generateCollider)
-        {
-            meshCollider = gameObject.AddComponent<MeshCollider>();
-        }
-        if (meshCollider != null && !generateCollider)
-        {
-            DestroyImmediate(meshCollider);
-        }
-
-        mesh = meshFilter.sharedMesh;
-        if (mesh == null)
-        {
-            mesh = new Mesh();
-            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            meshFilter.sharedMesh = mesh;
-        }
-
-        if (generateCollider)
-        {
-            if (meshCollider.sharedMesh == null)
-            {
-                meshCollider.sharedMesh = mesh;
-            }
-            // force update
-            meshCollider.enabled = false;
-            meshCollider.enabled = true;
-        }
-        meshCollider.convex = true;
-        meshRenderer.material = mat;
+        var result = await System.Threading.Tasks.Task.Run(() =>
+        Perlin.noiseGenerator(1));
+        var result2 = await System.Threading.Tasks.Task.Run(() =>
+        MarchingCube.marchingCubesGenerator(result, 1));
+        triangles = result2;
     }
+
+
 
     public void updatePosition(Vector3 newPosition)
     {
@@ -95,22 +65,14 @@ public class Chunk : MonoBehaviour
 
             //generate noise <- compute shader
             //generate marching cubes <- compute shader
-            //Array.Clear(generator.triangles, 0, generator.triangles.Length);
-            if (generator.currentChunk == newPosition)
-            {
-                //setValues(Perlin.noiseGenerator(1));
-                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
-            }
-            else
-            {
-                //setValues(Perlin.noiseGenerator(1));
-                generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
-            }
 
-
+            //setValues(Perlin.noiseGenerator(1));
+            triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
 
             //set mesh <- main thread
             SetMesh();
+            this.gameObject.isStatic = true;
+            StaticBatchingUtility.Combine(this.gameObject);
             generator.allChunks.Add(newPosition, this.gameObject);
         }
     }
@@ -142,6 +104,7 @@ public class Chunk : MonoBehaviour
         return points;
     }
 
+
     public void updateVertexDensity(int density)
     {
         generator.noiseShader.SetVector("startingValue", transform.position);
@@ -149,7 +112,7 @@ public class Chunk : MonoBehaviour
 
         //generate noise <- compute shader
         //generate marching cubes <- compute shader
-        generator.triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(density), density);
+        triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(density), density);
 
         //set mesh <- main thread
         SetMesh();
@@ -165,21 +128,14 @@ public class Chunk : MonoBehaviour
 
     public void SetMesh()
     {
-         meshRenderer = setupMeshRenderer();
-         meshFilter = setupMeshFilter();
-         meshCollider = setupMeshCollider();
-
         mesh = new Mesh();
         meshFilter.mesh = mesh;
         //meshFilter.sharedMesh = mesh;
 
-        mesh.vertices = generator.createVertices();
-        mesh.triangles = generator.createTriangles(mesh.vertices.Length);
+        mesh.vertices = createVertices();
+        mesh.triangles = createTriangles(mesh.vertices.Length);
 
         mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        mesh.RecalculateTangents();
-
 
         if (mesh == null)
         {
@@ -204,12 +160,10 @@ public class Chunk : MonoBehaviour
         //meshFilter.sharedMesh = mesh;
         mesh.Clear();
 
-        mesh.vertices = generator.createVertices();
-        mesh.triangles = generator.createTriangles(mesh.vertices.Length);
+        mesh.vertices = createVertices();
+        mesh.triangles = createTriangles(mesh.vertices.Length);
 
         mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
-        mesh.RecalculateTangents();
 
 
         if (mesh == null)
@@ -226,50 +180,8 @@ public class Chunk : MonoBehaviour
         meshCollider.enabled = false;
         meshCollider.enabled = true;
 
+        meshRenderer.material = generator.terrainMaterial;
     }
 
 
-    /// <summary>
-    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
-    /// </summary>
-    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
-    /// <returns></returns>
-    private MeshCollider setupMeshCollider()
-    {
-        if (gameObject.GetComponent<MeshCollider>() == null)
-        {
-            gameObject.AddComponent<MeshCollider>();
-        }
-        return gameObject.GetComponent<MeshCollider>();
-    }
-
-
-
-    /// <summary>
-    /// Sets up mesh renderer of given gameobject. Either gets the mesh renderer or creates one.
-    /// </summary>
-    /// <param name="chunk">Given gameobject which needs to contain a mesh renderer.</param>
-    /// <returns></returns>
-    private MeshRenderer setupMeshRenderer()
-    {
-        if (gameObject.GetComponent<MeshRenderer>() == null)
-        {
-            gameObject.AddComponent<MeshRenderer>();
-        }
-        return gameObject.GetComponent<MeshRenderer>();
-    }
-
-    /// <summary>
-    /// Sets up mesh filter of given gameobject. Either gets the mesh filter or creates one.
-    /// </summary>
-    /// <param name="chunk">Given gameobject which needs to contain a mesh filter.</param>
-    /// <returns></returns>
-    private MeshFilter setupMeshFilter()
-    {
-        if (gameObject.GetComponent<MeshFilter>() == null)
-        {
-            gameObject.AddComponent<MeshFilter>();
-        }
-        return gameObject.GetComponent<MeshFilter>();
-    }
 }

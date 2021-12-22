@@ -9,27 +9,28 @@ using System.Threading;
 
 public class Generation : GenerationTooling
 {
-    List<Vector3> tempPos = new List<Vector3>();
-
+    Vector3 playerPos = new Vector3(0, 0, 0);
 
     void Start()
     {
         //set all the values within shaders that do not need to be updated every frame or when spawning a chunk.
         setupValues();
-
-        //spawn the chunks where we start.
-        InitializeStartingChunks();
     }
 
 
     private void Update()
     {
-        testDynamicChunks();
+        spawnChunksBasedOnPlayerPosition();
+        if (!Application.isPlaying)
+        {
+            MarchingCube.ReleaseBuffers();
+            Perlin.ReleaseBuffers();
+        }
     }
 
-    Vector3 playerPos = new Vector3(0,0,0);
+
     //check movement of player to spawn new chunks
-    private void testDynamicChunks()
+    private void spawnChunksBasedOnPlayerPosition()
     {
         playerPos.x = Mathf.Floor(player.transform.position.x / ((pointsPerAxis - 1) * size));
         playerPos.y = Mathf.Floor(player.transform.position.y / ((pointsPerAxis - 1) * size));
@@ -39,14 +40,15 @@ public class Generation : GenerationTooling
         {
             //still need to add updating of the vertex density
             currentChunk = playerPos;
-            UpdateChunks();
+            SphericalChunkGenerationAroundPlayerPosition();
         }
     }
 
 
     //update the chunks based on player position
-    private void UpdateChunks()
+    private void SphericalChunkGenerationAroundPlayerPosition()
     {
+        //clear chunk queue so it only spawns the chunks the player currently sees, and not from previous position
         chunkQueue.Clear();
         currentPlayerChunks.Clear();
 
@@ -54,6 +56,7 @@ public class Generation : GenerationTooling
         int angleIncrease = 25;
         float angle = 0;
 
+        //cylinderical generation, sphere horizontally. Formula is not perfect
         for (float r = 0; r < radius; r += 2 * Mathf.PI * 0.0025f)
         {
 
@@ -76,59 +79,21 @@ public class Generation : GenerationTooling
                 if (!allChunks.ContainsKey(newPos) && !currentPlayerChunks.Contains(newPos))
                 {
                     chunkQueue.Enqueue(newPos);
+                    //CreateChunk(newPos);
                     currentPlayerChunks.Add(newPos);
                 }
             }
             //increase the angle, by an decreasing amount, so the spacing somewhat stays the same
             angle += angleIncrease / (1 + r);
         }
+        //if we arent running the coroutine already, then start it
         if (!spawningChunksRunning)
         {
-            SpawnChunksTest();
+            StartCoroutine(SpawnChunks());
         }
     }
 
-    IEnumerator SpawnChunks()
-    {
-        spawningChunksRunning = true;
-        while (chunkQueue.Count > 0)
-        {
-            Vector3 chunkPos = chunkQueue.Dequeue();
-            if (reusableChunkQueue.Count > 0)
-            {
-                GameObject chunk = reusableChunkQueue.Dequeue();
-                chunk.GetComponent<Chunk>().updatePosition(chunkPos);
-            }
-            else
-            {
-                CreateChunk(chunkPos);
-            }
-            yield return null;
-        }
-        StartCoroutine(UpdateChunkMeshes());
-        spawningChunksRunning = false;
-    }
 
-    private async void SpawnChunksTest()
-    {
-        spawningChunksRunning = true;
-        while (chunkQueue.Count > 0)
-        {
-            Vector3 chunkPos = chunkQueue.Dequeue();
-            if (reusableChunkQueue.Count > 0)
-            {
-                GameObject chunk = reusableChunkQueue.Dequeue();
-                chunk.GetComponent<Chunk>().updatePosition(chunkPos);
-            }
-            else
-            {
-                CreateChunk(chunkPos);
-            }
-            await System.Threading.Tasks.Task.Yield();
-        }
-        StartCoroutine(UpdateChunkMeshes());
-        spawningChunksRunning = false;
-    }
 
 
 
@@ -156,7 +121,6 @@ public class Generation : GenerationTooling
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-
             GameObject chunk = new GameObject();
             chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
@@ -164,72 +128,10 @@ public class Generation : GenerationTooling
             chunk.transform.position = chunkPosition;
             chunk.AddComponent<Chunk>();
             chunk.GetComponent<Chunk>().generator = this;
+            chunk.GetComponent<Chunk>().Setup();
 
-            noiseShader.SetVector("startingValue", chunkPosition);
-            marchingCubeShader.SetVector("startingValue", chunkPosition);
-
-            //generate noise <- compute shader
-            //generate marching cubes <- compute shader
-            Array.Clear(triangles, 0, triangles.Length);
-            if (currentChunk == startingChunk)
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(levelOfDetail + 1), levelOfDetail + 1);
-            }
-            else
-            {
-                triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
-            }
-
-
-
-            //set mesh <- main thread
-            chunk.GetComponent<Chunk>().SetMesh();
             allChunks.Add(startingChunk, chunk);
         }
-    }
-
-
-
-    /// <summary>
-    /// Generates the starting chunks when starting the world
-    /// </summary>
-    private void InitializeStartingChunks()
-    {
-        chunkQueue.Clear();
-        currentPlayerChunks.Clear();
-
-        int angleIncrease = 25;
-        float angle = 0;
-
-        for (float r = 0; r < radius; r += 2 * Mathf.PI * 0.0025f)
-        {
-
-            //convert to cartesian coordinate system
-            float carX2 = r * Mathf.Cos((angle * Mathf.PI) / 180);
-            float carY2 = r * Mathf.Sin((angle * Mathf.PI) / 180);
-
-            //convert to chunk size
-            carX2 *= pointsPerAxis * size;
-            carY2 *= pointsPerAxis * size;
-
-            //convert the points to chunk positions (square spacing)
-            carX2 = Mathf.Floor(carX2 / (pointsPerAxis * size));
-            carY2 = Mathf.Floor(carY2 / (pointsPerAxis * size));
-
-            for (int i = radius * -1; i < radius; i++)
-            {
-                Vector3 newPos = new Vector3(currentChunk.x + carX2, currentChunk.y + i, currentChunk.z + carY2);
-                //makes sure we dont add extra chunks that are not needed in the queue
-                if (!allChunks.ContainsKey(newPos) && !currentPlayerChunks.Contains(newPos))
-                {
-                    chunkQueue.Enqueue(newPos);
-                    currentPlayerChunks.Add(newPos);
-                }
-            }
-            //increase the angle, by an decreasing amount, so the spacing somewhat stays the same
-            angle += angleIncrease / (1 + r);
-        }
-
     }
 
     IEnumerator DestroyChunks()
@@ -254,5 +156,67 @@ public class Generation : GenerationTooling
         }
     }
 
+    /// <summary>
+    /// Spawns all chunks in the chunkqueue list.
+    /// </summary>
+    IEnumerator SpawnChunks()
+    {
+        spawningChunksRunning = true;
+        while (chunkQueue.Count > 0)
+        {
+            //for (int i = 0; i < 3; i++)
+            //{
+                //if (chunkQueue.Count > 0)
+                //{
+                    Vector3 chunkPos = chunkQueue.Dequeue();
+                    //first check if there is another chunk out of render distance to be reused.
 
+                    if (reusableChunkQueue.Count > 0)
+                    {
+                        GameObject chunk = reusableChunkQueue.Dequeue();
+                        chunk.GetComponent<Chunk>().updatePosition(chunkPos);
+                    }
+                    else
+                    {
+                        CreateChunk(chunkPos);
+                    }
+                    
+                //}
+            //}
+            yield return null;
+        }
+        spawningChunksRunning = false;
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+/*//stills spawns chunks when stopping editor mode if the queue isnt empty
+private async void SpawnChunksTest()
+{
+    spawningChunksRunning = true;
+    while (chunkQueue.Count > 0)
+    {
+        Vector3 chunkPos = chunkQueue.Dequeue();
+        if (reusableChunkQueue.Count > 0)
+        {
+            GameObject chunk = reusableChunkQueue.Dequeue();
+            chunk.GetComponent<Chunk>().updatePosition(chunkPos);
+        }
+        else
+        {
+            CreateChunk(chunkPos);
+        }
+        await System.Threading.Tasks.Task.Yield();
+    }
+    StartCoroutine(UpdateChunkMeshes());
+    spawningChunksRunning = false;
+}*/
