@@ -2236,7 +2236,7 @@ MonoBehaviour:
   cutoff: 0.48
   marchingCubeShader: {fileID: 7200000, guid: 8fee574655525814e85b73bcbbf70986, type: 3}
   pointsPerAxis: 20
-  size: 10
+  size: 1
   levelOfDetail: 1
   levelOfDetailRadius: 2
   currentPlayerChunks: []

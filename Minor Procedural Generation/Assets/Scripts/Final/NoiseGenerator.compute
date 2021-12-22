@@ -287,7 +287,7 @@ float worms(float x, float y, float z)
     
     float gh = 350;
  
-    float mh = 200;
+    float mh = 500;
     float ch = 300;
     
     gh -= octaves * 20;
@@ -297,12 +297,23 @@ float worms(float x, float y, float z)
     float topheight = gh;
     //endResult = 0;
 
+    
+    
     topheight += noise * mh;
     float caveheight2 = ch + noise * mh;
+    float caveDelta = 10;
 
-    if (currentHeight > caveheight2)
+    endResult = caveResult;
+    //clamp(endResult, 0, 1);
+    
+    if (currentHeight > topheight - caveDelta)
     {
     //caves
+        //endResult = 0;
+        
+        //3 means the amount of caves that go to surface, the higher the number, the more entrances
+        endResult -= (1 - ((topheight - currentHeight) / caveDelta)) / 4;
+        
         if (caveheight2 > gh)
         {
             //endResult -= (1 - (caveheight2 - currentHeight) / (caveheight2 - ch) * noise);
@@ -314,17 +325,74 @@ float worms(float x, float y, float z)
         
     }
     //clamp(endResult, 0, 1);
-    endResult = 0;
+    //endResult = 0;
+    //clamp(endResult, 0, 1);
+    float mountainSmoothness = 5;
+    //endResult = 0;
     if (currentHeight > topheight)
     {
         //mountains
-        endResult += ( (currentHeight - topheight) / (topheight - gh));
+        //endResult += ( (currentHeight - topheight) / (topheight - gh));
         //endResult -= caveResult * (1 - endResult);
+        //endResult = 1;
+
+        endResult += (1 - (topheight + mountainSmoothness - currentHeight) / mountainSmoothness);
+        float value = selfmadeperlin(baseX / 5.5f, baseY / 10.5f, baseZ / 5.5f);
+        float value2 = selfmadeperlin(baseX / 9.5f, baseY / 37.5f, baseZ / 9.5f);
+        endResult -= (value / 2 + value2) / 3;
+
+        //endResult -= value * 2;
+        //endResult = 1;
     }
+    clamp(endResult, 0, 1);
+    
+
+    
     
     return endResult;
     
     
+    
+    /*
+    float topheight = gh;
+    //endResult = 0;
+
+    topheight += noise * mh;
+    float caveheight2 = ch + noise * mh;
+    float caveDelta = 10;
+
+    endResult = caveResult;
+    
+    if (currentHeight > topheight - caveDelta)
+    {
+    //caves
+        //endResult = 0;
+        
+        
+        endResult += 1 - (topheight - currentHeight) / caveDelta;
+        
+        if (caveheight2 > gh)
+        {
+            //endResult -= (1 - (caveheight2 - currentHeight) / (caveheight2 - ch) * noise);
+        }
+        else
+        {
+            //endResult -= (1 - (gh - currentHeight) / (gh - ch) * noise);
+        }
+        
+    }
+    //clamp(endResult, 0, 1);
+    //endResult = 0;
+
+    if (currentHeight > topheight)
+    {
+        //mountains
+        //endResult += ( (currentHeight - topheight) / (topheight - gh));
+        //endResult -= caveResult * (1 - endResult);
+        endResult = 1;
+    }
+    
+    */
     
     
     
