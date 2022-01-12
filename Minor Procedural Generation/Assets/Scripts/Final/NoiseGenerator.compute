@@ -203,6 +203,8 @@ float worms(float x, float y, float z)
     //=================================                                       HEIGHTMAP                                                     ============================
     //==============================================================================================================================
     
+    
+    
     for (int j = 0; j < octaves; j++)
     {
         float test2 = heightmapNoise(baseX / testScale, baseZ / testScale);
