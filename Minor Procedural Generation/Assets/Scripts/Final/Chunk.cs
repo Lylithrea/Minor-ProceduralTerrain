@@ -18,7 +18,9 @@ public class Chunk : ChunkHelper
     public Generation generator;
     public Dictionary<Vector3, float> values = new Dictionary<Vector3, float>();
 
-
+    public List<Vector3> treeList = new List<Vector3>();
+    public List<GameObject> treeObjects = new List<GameObject>();
+    private bool isDoneSpawningTrees = false;
 
 
     public void Setup()
@@ -30,13 +32,32 @@ public class Chunk : ChunkHelper
 
         //SetTriangles();
         triangles = MarchingCube.marchingCubesGenerator(Perlin.noiseGenerator(1), 1);
+        treeList = new List<Vector3>(Noise.Perlin.getTrees());
 
         meshRenderer = setupMeshRenderer();
         meshFilter = setupMeshFilter();
         meshCollider = setupMeshCollider();
 
         SetMesh();
+
+        StartCoroutine(SpawnTrees());
+        //Debug.Log("Spawning trees! : " + treeList.Count);
     }
+
+    IEnumerator SpawnTrees()
+    {
+        foreach(Vector3 tree in treeList)
+        {
+            GameObject treeObject = Instantiate(generator.treeModel);
+            Vector3 newPos = tree;
+            newPos.x += UnityEngine.Random.Range(-0.75f , 0.75f );
+            newPos.z += UnityEngine.Random.Range(-0.75f , 0.75f );
+            treeObject.transform.position = newPos;
+            yield return null;
+        }
+    }
+
+    //IEnumerator
 
     private async void SetTriangles()
     {

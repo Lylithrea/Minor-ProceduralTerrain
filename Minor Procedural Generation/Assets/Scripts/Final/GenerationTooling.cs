@@ -13,14 +13,35 @@ public class GenerationTooling : MonoBehaviour
     public ComputeShader noiseShader;
     //[Range(0.43f, 0.47f)]
     public float scale;
-    public float groundLevelHeight = 250;
     public int groundLevel;
-    [Range(0,1f)] [Tooltip("Influences how much value the next octave brings")]
+    public GameObject chunkPrefab;
+
+    public GameObject treeModel;
+
+    [Header("HeightMap Settings")]
+    public float mountainHeight = 250;
+    [Range(0, 1f)]    [Tooltip("Influences how much value the next octave brings")]
     public float persistence = 0.65f;
-    [Range(0, 1f)] [Tooltip("Influences the frequency/noise of the next octave")]
+    [Range(0, 1f)]    [Tooltip("Influences the frequency/noise of the next octave")]
     public float lacunarity = 0.25f;
-    [Range(1, 8)][Tooltip("Influences how many layers of noise go on top of each other")]
+    [Range(1, 8)]    [Tooltip("Influences how many layers of noise go on top of each other")]
     public int octaves = 4;
+    public float heightMapScale = 150;
+    [Range(0, 10)]
+    public float mountainExp = 4;
+
+
+    [Header("Cave Settings")]
+    [Range(0f, 1f)]
+    public float caveCutoff = 0.65f;
+    public float caveScale = 150;
+    public float minBigCaves = 0;
+    public float maxBigCaves = 250;
+    public float deltaBigCaves = 75;
+    [Range(0f, 1f)]
+    public float strengthBigCaves = 0.1f;
+
+
 
     [Header("Generation Settings")]
     public int radius;
@@ -78,10 +99,23 @@ public class GenerationTooling : MonoBehaviour
         noiseShader.SetFloat("repeat", 9);
         noiseShader.SetInt("pointsPerAxis", pointsPerAxis);
         noiseShader.SetFloat("groundHeight", groundLevel);
-        noiseShader.SetFloat("mountainHeight", groundLevelHeight);
+
+        //heightMapSettings
+        noiseShader.SetFloat("mountainHeight", mountainHeight);
         noiseShader.SetFloat("persistence", persistence);
         noiseShader.SetFloat("lacunarity", lacunarity);
         noiseShader.SetInt("octaves", octaves);
+        noiseShader.SetFloat("heightMapScale", heightMapScale);
+        noiseShader.SetFloat("exp", mountainExp);
+
+        //caves settings
+        noiseShader.SetFloat("caveCutoff", caveCutoff);
+        noiseShader.SetFloat("caveScale", caveScale);
+        noiseShader.SetFloat("caveMin", minBigCaves);
+        noiseShader.SetFloat("caveMax", maxBigCaves);
+        noiseShader.SetFloat("caveDelta", deltaBigCaves);
+        noiseShader.SetFloat("caveStrength", strengthBigCaves);
+
 
         marchingCubeShader.SetInt("pointsPerAxis", pointsPerAxis);
         marchingCubeShader.SetFloat("cutoff", cutoff);

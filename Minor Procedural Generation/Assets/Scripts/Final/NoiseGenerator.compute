@@ -17,6 +17,23 @@ const float1 persistence;
 const float1 lacunarity;
 const int octaves = 1;
 
+const float1 heightMapScale = 150;
+    
+//cave variables
+const float1 caveCutoff;
+const float1 caveScale = 150;
+const float1 caveMin = 0;
+const float1 caveMax = 250;
+const float1 caveDelta = 75;
+const float1 caveStrength = 0.1f;
+
+    //the higher the number the more flat area is between the mountains
+const float1 exp = 4;
+
+float1 varMountainHeight;
+float1 varMountainFrequention;
+float1 varMountainExp;
+float1 varGroundHeight;
 
 //height noise map
 
@@ -30,6 +47,8 @@ float3 startingValue;
 
 
 RWStructuredBuffer<float4> vertexPerlin;
+//RWStructuredBuffer<float3> treePositions;
+AppendStructuredBuffer<float3> treePositions;
 
 static int numThreads = 8;
 
@@ -170,57 +189,169 @@ float worms(float x, float y, float z)
     float baseZ = z;
     
     
-    float caveX = x / 150;
-    float caveY = y / 150;
-    float caveZ = z / 150;
+    float caveX = x / caveScale;
+    float caveY = y / caveScale;
+    float caveZ = z / caveScale;
     
 
     x /= noiseScale;
     y /= noiseScale;
     z /= noiseScale;
     
-    
-    const float gh = 350;
- 
-    const float mh = 400;
-    const float ch = 300;
-    //the higher the number the more flat area is between the mountains
-    const float exp = 4;
-    const float caveDelta = 10;
-    const float mountainSmoothness = 5;
-    
-    
-    float noise = 0;
-    float weight = 1;
 
-    float testScale = 150;
-        
-    float maxValue = 0;
-    float topheight = 350;
+    
+    //==============================================================================================================================
+    //=================================                                       BIOMES                                                     ============================
+    //==============================================================================================================================
+    
+    float mountainHeightNoiseOffset = heightmapNoise(baseX / 800.5f, baseZ / 800.5f);
+    float mountainExpNoiseOffset = heightmapNoise(baseX / 700.5f, baseZ / 700.5f);
+    float mountainFrequentionNoiseOffset = heightmapNoise(baseX / 900.5f, baseZ / 900.5f);
+    float groundLevelNoiseOffset = heightmapNoise(baseX / 1000.5f, baseZ / 1000.5f);
+    float mountainHeightNoisePersistence = heightmapNoise(baseX / 100.5f, baseZ / 100.5f);
+    float hillNoise = heightmapNoise(baseX / 250.5f, baseZ / 250.5f);
+    
+
+
+    varMountainHeight -= mountainHeightNoiseOffset * 100;
+    if (varMountainHeight < 0)
+    {
+        varMountainHeight = 0;
+    }
+    varMountainExp += mountainExpNoiseOffset * 0.75f;
+    varMountainFrequention -= mountainFrequentionNoiseOffset * 50;
+    
+    if (groundLevelNoiseOffset > 0.75f)
+    {
+        groundLevelNoiseOffset += 0.5f;
+    }
+    groundLevelNoiseOffset -= 0.25f;
+    varGroundHeight += groundLevelNoiseOffset * 100;
+    
+    float topheight = varGroundHeight;
     float caveResult = 1;
     
     //==============================================================================================================================
     //=================================                                       HEIGHTMAP                                                     ============================
     //==============================================================================================================================
     
+    float variableScale = heightMapScale;
+    float maxValue = 0;
+    float noise = 0;
+    float weight = 1;
+    
     for (int j = 0; j < octaves; j++)
     {
-        float test2 = heightmapNoise(baseX / testScale, baseZ / testScale);
+        float test2 = heightmapNoise(baseX / variableScale, baseZ / variableScale);
         noise += (test2 * weight);
         //0.9 because 1 is very unlikely so this is a more accurate representation
         maxValue += (0.9f * weight);
-        testScale *= lacunarity;
+        variableScale *= lacunarity;
         weight *= persistence;
     }
         
     //normalize value
     noise = noise / maxValue;
     
-    //==================================                   Setting values                ==========================================================
-    topheight += (pow((noise * 10), exp)) * (((mh) / 100) / (pow(10, (exp - 2))));
-    float caveheight2 = ch + noise * mh;
     
+    float subMountainsNoise = 0;
+    float subMaxValue = 0;
+    weight = 1;
+    variableScale = varMountainFrequention / 1.5f;
+    
+    for (int j = 0; j < octaves; j++)
+    {
+        float test2 = heightmapNoise(baseX / variableScale, baseZ / variableScale);
+        subMountainsNoise += (test2 * weight);
+        //0.9 because 1 is very unlikely so this is a more accurate representation
+        subMaxValue += (0.9f * weight);
+        variableScale *= lacunarity;
+        weight *= persistence;
+    }
+    subMountainsNoise = subMountainsNoise / subMaxValue;
+    
+    //==================================                   Setting values                ==========================================================
+    
+    
+    float tempNoise = 0;
+    float max = 0.65f;
+    float min = 0.35f;
+    
+    if (noise < max && noise > min)
+    {
+        float absMin = min - min;
+        float absMax = max - min;
+        float value = (noise - min) / absMax;
+        if (value <= 1)
+        {
+            value *= 2;
+            value -= 1;
+            value = abs(value) - 1;
+            value = abs(value);
+            tempNoise = value;
+        }
+    }
 
+    clamp(tempNoise, 0, 1);
+    
+    //noise = tempNoise + subMountainsNoise;
+    noise = subMountainsNoise;
+    
+    //makes exponential mountains possible, to disable just set exp to 1.
+    float mountainPersistence = 0;
+    float mPerDelta = 0.1f;
+    float mCutoff = 0.5f;
+    /*if (mountainExpNoiseOffset > mCutoff - mPerDelta)
+    {
+        mountainPersistence = (mountainExpNoiseOffset - (mCutoff - mPerDelta)) / ((mCutoff + mPerDelta) - (mCutoff - mPerDelta));
+    }
+    else
+    {
+        mountainPersistence = 0;
+    }*/
+    mountainExpNoiseOffset = (mountainExpNoiseOffset - (mCutoff - mPerDelta)) / ((mCutoff + mPerDelta) - (mCutoff - mPerDelta));
+    
+    if (mountainExpNoiseOffset < 0)
+    {
+        mountainExpNoiseOffset = 0;
+    }
+    if (mountainExpNoiseOffset > 1)
+    {
+        mountainExpNoiseOffset = 1;
+    }
+    
+    if (mountainExpNoiseOffset < 0.5f)
+    {
+        mountainPersistence = (1 - sqrt(1 - pow(2 * mountainExpNoiseOffset, 2))) / 2;
+
+    }
+    else
+    {
+        mountainPersistence = (sqrt(1 - pow(-2 * mountainExpNoiseOffset + 2, 2)) + 1) / 2;
+    }
+    //mountainPersistence = pow(2, 10 * mountainExpNoiseOffset - 10);
+    clamp(mountainPersistence, 0, 1);
+    
+    if (mountainPersistence < 0)
+    {
+        mountainPersistence = 0;
+    }
+    if (mountainPersistence > 1)
+    {
+        mountainPersistence = 1;
+    }
+
+    //mountainPersistence = 1;
+    //varMountainExp = 1;
+    topheight += ((pow((noise * 10), varMountainExp)) * (((varMountainHeight) / 100) / (pow(10, (varMountainExp - 2)))) * mountainPersistence);
+        
+    topheight -= hillNoise * 50;
+    
+    float caveDelta = 10;
+    //the area that smoothens the moutain, higher just means higher mountains, so should as low as possible, thus not adjustable
+    float mountainSmoothness = 5;
+    
+    
     //==============================================================================================================================
     //====================================                                       CAVES                                                     ==============================
     //==============================================================================================================================
@@ -232,21 +363,48 @@ float worms(float x, float y, float z)
         caveResult -= selfmadeperlin(caveX * factor, caveY * factor, caveZ * factor) / factor;
     }
     
-    float caveheight = 0.65f;
-    if (caveResult > caveheight)
+    
+    //==================================                   Bigger cave generation                ==========================================================
+    
+
+
+    float newCaveCutoff = caveCutoff;
+    
+    if (currentHeight > caveMin)
+    {
+        float absMin = caveMin - caveMin;
+        float absMax = caveMax - caveMin;
+        float deltaMin = absMin + caveDelta;
+        float deltaMax = absMax - caveDelta;
+    
+        float test = (currentHeight - caveMin) / absMax;
+        if (test <= 1)
+        {
+            test *= 2;
+            test -= 1;
+            test = abs(test) - 1;
+            test = abs(test) * 2;
+            newCaveCutoff += test * caveStrength;
+            clamp(newCaveCutoff, 0, 1);
+        }
+    }
+    
+    //==================================                   Lerping                ==========================================================
+    
+    if (caveResult > newCaveCutoff)
     {
         caveResult = 0;
     }
     else
     {
-        caveResult = 1 - (caveResult / caveheight);
+        caveResult = 1 - (caveResult / newCaveCutoff);
     }
         
     float endResult = caveResult;
     
     if (currentHeight > topheight - caveDelta)
     {
-        //3 means the amount of caves that go to surface, the higher the number, the more entrances
+        //    /x means the amount of caves that go to surface, the higher the number, the more entrances
         endResult -= (1 - ((topheight - currentHeight) / caveDelta)) / 4;
     }
     
@@ -255,17 +413,36 @@ float worms(float x, float y, float z)
     //==================================                                       TERRAIN                                                     ==============================
     //==============================================================================================================================
     
-    
 
 
     if (currentHeight > topheight)
     {
         endResult += (1 - (topheight + mountainSmoothness - currentHeight) / mountainSmoothness);
+        //extra layer of bumpiness
         float value = selfmadeperlin(baseX / 5.5f, baseY / 10.5f, baseZ / 5.5f);
         float value2 = selfmadeperlin(baseX / 9.5f, baseY / 37.5f, baseZ / 9.5f);
-        endResult -= (value / 2 + value2) / 3;
+        //combine it to the endresult, value/2 so that value2 has more impact, both /x, where x is the persistence
+        endResult -= (value / 2 + value2) / 2;
     }
 
+
+    float treeNoise = heightmapNoise(baseX / 200.5f, baseZ / 200.5f);
+    float subTreeNoise = heightmapNoise(baseX / 20.5f, baseZ / 20.5f);
+    
+    
+    if (currentHeight < groundHeight + mountainHeight - 100)
+    {
+        if (currentHeight > topheight && currentHeight < topheight + 1)
+        {
+            if (treeNoise > 0.55f)
+            {
+                if (subTreeNoise > 0.35f)
+                {
+                    treePositions.Append(float3(baseX, currentHeight + 3, baseZ));
+                }
+            }
+        }
+    }
     
     return endResult;
 }
@@ -283,6 +460,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
     }
 
+    varGroundHeight = groundHeight;
+    varMountainExp = exp;
+    varMountainFrequention = heightMapScale;
+    varMountainHeight = mountainHeight;
+    
+    
+    
     //generate a value based on position and add it to the buffer, together with the postion
     float3 newPos = startingValue;
 
@@ -292,8 +476,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     newPos.y = (startingValue.y + (id.y * size ));
     newPos.z = (startingValue.z + (id.z * size ));
 
-    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size , id.y * size , id.z * size , worms(newPos.x, newPos.y, newPos.z)));
+    float result = worms(newPos.x, newPos.y, newPos.z);
+    
+    vertexPerlin[getIndex(id.x, id.y, id.z)] = (float4(id.x * size , id.y * size , id.z * size , result));
    
-
 }
 
