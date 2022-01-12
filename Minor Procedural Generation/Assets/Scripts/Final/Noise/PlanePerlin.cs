@@ -156,7 +156,8 @@ public static class  PlanePerlin
                 {
                     endPerlin = 0;
                 }
-                noiseMap[x, y] = cavePerlin + endPerlin;
+                //noiseMap[x, y] = cavePerlin + endPerlin;
+                noiseMap[x, y] = endPerlin;
                 //noiseMap[x, y] = selfmadeNoise(x / 50.5f, y / 50.5f);
 
             }

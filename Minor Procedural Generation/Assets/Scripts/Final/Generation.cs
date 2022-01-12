@@ -121,14 +121,17 @@ public class Generation : GenerationTooling
         if (!allChunks.ContainsKey(startingChunk))
         {
             //generate a new chunk
-            GameObject chunk = new GameObject();
+            // chunk = new GameObject();
+
+            GameObject chunk = Instantiate(chunkPrefab);
             chunk.name = "Chunk (" + startingChunk.x + "," + startingChunk.y + "," + startingChunk.z + ")";
 
             Vector3 chunkPosition = startingChunk * (pointsPerAxis - 1) * size;
             chunk.transform.position = chunkPosition;
-            chunk.AddComponent<Chunk>();
+            //chunk.AddComponent<Chunk>();
             chunk.GetComponent<Chunk>().generator = this;
             chunk.GetComponent<Chunk>().Setup();
+
 
             allChunks.Add(startingChunk, chunk);
         }
