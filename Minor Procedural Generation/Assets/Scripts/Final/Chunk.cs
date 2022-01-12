@@ -48,11 +48,11 @@ public class Chunk : ChunkHelper
     {
         foreach(Vector3 tree in treeList)
         {
-            GameObject treeObject = Instantiate(generator.treeModel);
+/*            GameObject treeObject = Instantiate(generator.treeModel);
             Vector3 newPos = tree;
             newPos.x += UnityEngine.Random.Range(-0.75f , 0.75f );
             newPos.z += UnityEngine.Random.Range(-0.75f , 0.75f );
-            treeObject.transform.position = newPos;
+            treeObject.transform.position = newPos;*/
             yield return null;
         }
     }
