@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e55693b570d9baa468e6b35abc541a08, type: 3}
+  m_Name: Test
+  m_EditorClassIdentifier: 
+  ambientColour:
+    serializedVersion: 2
+    key0: {r: 0.2249911, g: 0.4450673, b: 0.6037736, a: 1}
+    key1: {r: 0.26330543, g: 0.8150335, b: 0.9150943, a: 1}
+    key2: {r: 0.22352943, g: 0.4431373, b: 0.6039216, a: 0}
+    key3: {r: 0.18867925, g: 0.5467603, b: 0.754717, a: 0}
+    key4: {r: 0.18867925, g: 0.5467603, b: 0.754717, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 7517
+    ctime1: 31997
+    ctime2: 55705
+    ctime3: 58596
+    ctime4: 57632
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 3
+    m_NumAlphaKeys: 2
+  directionalColour:
+    serializedVersion: 2
+    key0: {r: 0.19607842, g: 0.1764706, b: 0.2627451, a: 1}
+    key1: {r: 1, g: 0.32126847, b: 0, a: 1}
+    key2: {r: 0.8962264, g: 0.66523033, b: 0.13105197, a: 0}
+    key3: {r: 0.8867924, g: 0.8445782, b: 0.53123885, a: 0}
+    key4: {r: 0.8930457, g: 0.8032714, b: 0.497891, a: 0}
+    key5: {r: 0.9339623, g: 0.6593539, b: 0.110137045, a: 0}
+    key6: {r: 1, g: 0.42769682, b: 0, a: 0}
+    key7: {r: 0.32864934, g: 0.2949003, b: 0.4433962, a: 0}
+    ctime0: 7903
+    ctime1: 12914
+    ctime2: 17540
+    ctime3: 26985
+    ctime4: 39514
+    ctime5: 49922
+    ctime6: 53970
+    ctime7: 59174
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 8
+    m_NumAlphaKeys: 2
+  fogColour:
+    serializedVersion: 2
+    key0: {r: 0.08370417, g: 0.08392924, b: 0.084905684, a: 1}
+    key1: {r: 0.8396226, g: 0.5446355, b: 0.43169275, a: 1}
+    key2: {r: 1, g: 1, b: 1, a: 0}
+    key3: {r: 0.70692414, g: 0.858177, b: 0.8867924, a: 0}
+    key4: {r: 0.764685, g: 0.8821645, b: 0.9056604, a: 0}
+    key5: {r: 1, g: 1, b: 1, a: 0}
+    key6: {r: 0.8396226, g: 0.5446355, b: 0.43169275, a: 0}
+    key7: {r: 0.08370419, g: 0.08392924, b: 0.084905684, a: 0}
+    ctime0: 12722
+    ctime1: 19275
+    ctime2: 24287
+    ctime3: 31611
+    ctime4: 37008
+    ctime5: 42791
+    ctime6: 46453
+    ctime7: 58018
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 8
+    m_NumAlphaKeys: 2

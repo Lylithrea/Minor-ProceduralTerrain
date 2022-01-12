@@ -48,11 +48,37 @@ public class Chunk : ChunkHelper
     {
         foreach(Vector3 tree in treeList)
         {
-            GameObject treeObject = Instantiate(generator.treeModel);
+
             Vector3 newPos = tree;
             newPos.x += UnityEngine.Random.Range(-0.75f , 0.75f );
             newPos.z += UnityEngine.Random.Range(-0.75f , 0.75f );
+
+            Vector3 rayPos = newPos;
+            rayPos.y += 10;
+
+            RaycastHit hit;
+            if (Physics.Raycast(rayPos, transform.TransformDirection(Vector3.down), out hit, 12))
+            {
+                //newPos = hit.transform.position;
+                if (hit.transform.tag == "Tree")
+                {
+                    break;
+                }
+                newPos.y = rayPos.y - hit.distance;
+            }
+            GameObject treeObject = Instantiate(generator.treeModel);
+
             treeObject.transform.position = newPos;
+            float randomScale = UnityEngine.Random.Range(0.75f, 2f);
+            treeObject.transform.localScale = new Vector3(randomScale, randomScale, randomScale);
+
+            Renderer mesh = treeObject.GetComponentInChildren<MeshRenderer>();
+            MaterialPropertyBlock mat = new MaterialPropertyBlock();
+            mesh.GetPropertyBlock(mat);
+            Color col = new Color(UnityEngine.Random.Range(0.15f, 0.3f), UnityEngine.Random.Range(0.45f, 0.65f), UnityEngine.Random.Range(0.25f, 0.40f));
+            mat.SetColor("_BaseColor", col);
+            mesh.SetPropertyBlock(mat);
+
             yield return null;
         }
     }

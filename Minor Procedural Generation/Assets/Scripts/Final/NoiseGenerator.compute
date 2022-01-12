@@ -204,12 +204,12 @@ float worms(float x, float y, float z)
     //=================================                                       BIOMES                                                     ============================
     //==============================================================================================================================
     
-    float mountainHeightNoiseOffset = heightmapNoise(baseX / 800.5f, baseZ / 800.5f);
-    float mountainExpNoiseOffset = heightmapNoise(baseX / 700.5f, baseZ / 700.5f);
-    float mountainFrequentionNoiseOffset = heightmapNoise(baseX / 900.5f, baseZ / 900.5f);
-    float groundLevelNoiseOffset = heightmapNoise(baseX / 1000.5f, baseZ / 1000.5f);
-    float mountainHeightNoisePersistence = heightmapNoise(baseX / 100.5f, baseZ / 100.5f);
-    float hillNoise = heightmapNoise(baseX / 250.5f, baseZ / 250.5f);
+    float mountainHeightNoiseOffset = selfmadeperlin(baseX / 800.5f, baseY / 800.5f, baseZ / 800.5f);
+    float mountainExpNoiseOffset = selfmadeperlin(baseX / 700.5f, baseY / 700.5f, baseZ / 700.5f);
+    float mountainFrequentionNoiseOffset = selfmadeperlin(baseX / 900.5f, baseY / 900.5f, baseZ / 900.5f);
+    float groundLevelNoiseOffset = selfmadeperlin(baseX / 1000.5f, baseY / 1000.5f, baseZ / 1000.5f);
+    float mountainHeightNoisePersistence = selfmadeperlin(baseX / 100.5f, baseY / 100.5f, baseZ / 100.5f);
+    float hillNoise = selfmadeperlin(baseX / 250.5f, baseY / 250.5f, baseZ / 250.5f);
     
 
 
@@ -219,13 +219,13 @@ float worms(float x, float y, float z)
         varMountainHeight = 0;
     }
     varMountainExp += mountainExpNoiseOffset * 0.75f;
-    varMountainFrequention -= mountainFrequentionNoiseOffset * 50;
+    varMountainFrequention -= mountainFrequentionNoiseOffset * 25;
     
     if (groundLevelNoiseOffset > 0.75f)
     {
-        groundLevelNoiseOffset += 0.5f;
+        //groundLevelNoiseOffset += 0.5f;
     }
-    groundLevelNoiseOffset -= 0.25f;
+    //groundLevelNoiseOffset -= 0.25f;
     varGroundHeight += groundLevelNoiseOffset * 100;
     
     float topheight = varGroundHeight;
@@ -345,7 +345,7 @@ float worms(float x, float y, float z)
     //varMountainExp = 1;
     topheight += ((pow((noise * 10), varMountainExp)) * (((varMountainHeight) / 100) / (pow(10, (varMountainExp - 2)))) * mountainPersistence);
         
-    topheight -= hillNoise * 50;
+    topheight -= hillNoise * 25;
     
     float caveDelta = 10;
     //the area that smoothens the moutain, higher just means higher mountains, so should as low as possible, thus not adjustable
