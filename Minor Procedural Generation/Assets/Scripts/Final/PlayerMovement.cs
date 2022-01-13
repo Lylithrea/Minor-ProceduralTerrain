@@ -8,6 +8,7 @@ public class PlayerMovement : MonoBehaviour
     public float speed;
     public float rotationSpeed;
     public float jumpHeight = 500;
+    public float jetpackStrength = 25;
     private Rigidbody body;
     float distToGround;
     float xRotate = 0.0f;
@@ -35,19 +36,30 @@ public class PlayerMovement : MonoBehaviour
             body.AddForce(transform.up * jumpHeight);
         }
 
+        if (Input.GetKey(KeyCode.E))
+        {
+            body.AddForce(transform.up * jetpackStrength);
+        }
 
         //this.transform.Rotate(new Vector3(Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X") * -1, 0) * Time.deltaTime * rotationSpeed, Space.World);
 
-        xRotate += Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-        yRotate += Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime;
+        xRotate += Input.GetAxis("Mouse X") * rotationSpeed * Time.fixedDeltaTime;
+        yRotate += Input.GetAxis("Mouse Y") * rotationSpeed * Time.fixedDeltaTime;
         yRotate = Mathf.Clamp(yRotate, -90f, 90f);
         this.gameObject.transform.eulerAngles = new Vector3(0, xRotate, 0.0f);
         characterCamera.transform.eulerAngles = new Vector3(-yRotate, xRotate, 0.0f);
 
 
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.Q))
         {
-            Cursor.lockState = CursorLockMode.None;
+            if(Cursor.lockState == CursorLockMode.None)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
         }
     }
 

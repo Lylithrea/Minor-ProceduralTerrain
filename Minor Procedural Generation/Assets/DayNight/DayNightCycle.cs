@@ -10,6 +10,8 @@ public class DayNightCycle : MonoBehaviour
 
     [Range(0,24f)] public float timeofDay;
 
+    [Range(0f,1f)]public float timeSpeed;
+
 
     // Start is called before the first frame update
 
@@ -24,9 +26,9 @@ public class DayNightCycle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        timeofDay+= Time.deltaTime;
+        timeofDay += Time.deltaTime * timeSpeed;
         //clamp between 24, bcz 24 hours in a day
         timeofDay %= 24;
-        updateLightning(timeofDay / 24f);
+        updateLightning(timeofDay / 24f );
     }
 }

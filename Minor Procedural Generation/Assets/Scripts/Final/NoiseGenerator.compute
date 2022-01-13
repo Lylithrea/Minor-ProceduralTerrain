@@ -49,6 +49,7 @@ float3 startingValue;
 RWStructuredBuffer<float4> vertexPerlin;
 //RWStructuredBuffer<float3> treePositions;
 AppendStructuredBuffer<float3> treePositions;
+AppendStructuredBuffer<float3> flowerPositions;
 
 static int numThreads = 8;
 
@@ -441,6 +442,16 @@ float worms(float x, float y, float z)
                     treePositions.Append(float3(baseX, currentHeight + 3, baseZ));
                 }
             }
+        }
+    }
+    
+    float flowerNoise = heightmapNoise(baseX / 20.f, baseZ / 20.5f);
+    
+    if (currentHeight < groundHeight + mountainHeight - 200)
+    {
+        if (flowerNoise > 0.5f)
+        {
+            flowerPositions.Append(float3(baseX, currentHeight + 3, baseZ));
         }
     }
     

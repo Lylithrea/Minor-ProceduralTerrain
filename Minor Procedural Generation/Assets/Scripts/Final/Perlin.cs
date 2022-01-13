@@ -14,11 +14,14 @@ namespace Noise
         public static float size;
         static ComputeBuffer vertexPerlinBuffer;
         static ComputeBuffer treeBuffer;
-        static ComputeBuffer treeCounter;
+        static ComputeBuffer treeCounter;        
+        static ComputeBuffer flowerBuffer;
+        static ComputeBuffer flowerCounter;
         static Vector4[] vertexPerlin;
         static int vertexPerlinResults;
         public static bool isReady = false;
         private static List<Vector3> treeList = new List<Vector3>();
+        private static List<Vector3> flowerList = new List<Vector3>();
 
         public static void ReleaseBuffers()
         {
@@ -37,6 +40,10 @@ namespace Noise
             treeCounter = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
             treeBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 3, ComputeBufferType.Append);
             noiseShader.SetBuffer(0, "treePositions", treeBuffer);
+
+            flowerCounter = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
+            flowerBuffer = new ComputeBuffer(vertexPerlinResults, sizeof(float) * 3, ComputeBufferType.Append);
+            noiseShader.SetBuffer(0, "flowerPositions", flowerBuffer);
         }
 
         /// <summary>
@@ -53,6 +60,7 @@ namespace Noise
             //reset the counter value because else it starts where it left off previous run
             vertexPerlinBuffer.SetCounterValue(0);
             treeBuffer.SetCounterValue(0);
+            flowerBuffer.SetCounterValue(0);
 
             //how often the shader will get dispatched in each direction
             //(if dispatchamount and threads are 8, it will mean that the code will totally be run 8x8x8x2x2x2.)
@@ -79,11 +87,35 @@ namespace Noise
             treeBuffer.GetData(trees);
             //Debug.Log("Got trees! : " + treeAmount);
             setTrees(trees);
+
+            ComputeBuffer.CopyCount(flowerBuffer, flowerCounter, 0);
+            int[] flowerCountArray = { 0 };
+            treeCounter.GetData(flowerCountArray);
+            int flowerAmount = flowerCountArray[0];
+            Vector3[] flowers = new Vector3[flowerAmount];
+            treeBuffer.GetData(flowers);
+            //Debug.Log("Got trees! : " + treeAmount);
+            setFlowers(flowers);
+
             vertexPerlinBuffer.GetData(vertexPerlin);
 
 
 
             return vertexPerlin;
+        }
+
+        public static void setFlowers(Vector3[] flowers)
+        {
+            flowerList.Clear();
+            foreach (Vector3 flower in flowers)
+            {
+                flowerList.Add(flower);
+            }
+        }
+
+        public static List<Vector3> getFlowers()
+        {
+            return flowerList;
         }
 
         public static void setTrees(Vector3[] trees)
